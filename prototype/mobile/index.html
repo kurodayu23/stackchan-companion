@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0e1117">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>小栈</title>
+  <link rel="icon" href="data:,">
+  <link rel="apple-touch-icon" href="./assets/app-icon-192.png">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="stylesheet" href="./styles.css?v=29">
+  <script type="importmap">
+    {"imports":{"three":"./vendor/three.module.js?v=29"}}
+  </script>
+</head>
+<body>
+  <svg class="svg-sprite" aria-hidden="true">
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5V21h-6v-6H9v6H3z"/></symbol>
+    <symbol id="i-remote" viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="5"/><circle cx="12" cy="8" r="1.4"/><circle cx="12" cy="15.5" r="1.4"/></symbol>
+    <symbol id="i-face" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="15" rx="5"/><path d="M8 12h.01M16 12h.01M8.5 16c2.2 1.4 4.8 1.4 7 0M9 5V3m6 2V3"/></symbol>
+    <symbol id="i-music" viewBox="0 0 24 24"><path d="M9 18V5l10-2v13M9 9l10-2"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></symbol>
+    <symbol id="i-gear" viewBox="0 0 24 24"><path d="M12 2.8 14 4l2.4-.4 1.2 2.1 2.3.9v2.5l1.5 1.9-1.5 2v2.4l-2.3.9-1.2 2.1L14 18l-2 1.2L10 18l-2.4.4-1.2-2.1-2.3-.9V13L2.6 11l1.5-1.9V6.6l2.3-.9 1.2-2.1L10 4z"/><circle cx="12" cy="11" r="3.2"/></symbol>
+    <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 21S3.5 16.2 3.5 9.4A4.4 4.4 0 0 1 12 7.6a4.4 4.4 0 0 1 8.5 1.8C20.5 16.2 12 21 12 21z"/></symbol>
+    <symbol id="i-mic" viewBox="0 0 24 24"><rect x="8" y="3" width="8" height="13" rx="4"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M8.5 21h7"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="m9 6 9 6-9 6z"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24"><path d="M8 6v12M16 6v12"/></symbol>
+    <symbol id="i-prev" viewBox="0 0 24 24"><path d="M6 5v14m12-13-9 6 9 6z"/></symbol>
+    <symbol id="i-next" viewBox="0 0 24 24"><path d="M18 5v14M6 6l9 6-9 6z"/></symbol>
+    <symbol id="i-volume" viewBox="0 0 24 24"><path d="M4 10v4h4l5 4V6L8 10zM17 9c1.8 1.8 1.8 4.2 0 6m2-8c3.2 3.2 3.2 6.8 0 10"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="7" r="4"/><path d="M4 21c.7-5 3.4-7 8-7s7.3 2 8 7"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3M5 5l2 2m10 10 2 2m0-14-2 2M7 17l-2 2"/></symbol>
+    <symbol id="i-wifi" viewBox="0 0 24 24"><path d="M3 9c5.6-4.5 12.4-4.5 18 0M6.5 12.5c3.6-2.8 7.4-2.8 11 0M10 16c1.4-1 2.6-1 4 0"/><circle cx="12" cy="19" r="1"/></symbol>
+    <symbol id="i-auto" viewBox="0 0 24 24"><path d="M5.2 8.2A8 8 0 1 1 4 13"/><path d="M4 5v4h4"/><path d="M12 8v4l2.6 1.6"/></symbol>
+    <symbol id="i-light" viewBox="0 0 24 24"><path d="M8.5 15.5A6 6 0 1 1 15.5 15.5L14 18H10z"/><path d="M10 21h4"/></symbol>
+    <symbol id="i-update" viewBox="0 0 24 24"><path d="M12 16V4m-4 4 4-4 4 4"/><path d="M5 14v5h14v-5"/></symbol>
+    <symbol id="i-camera" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="m8 6 1.5-2h5L16 6"/><circle cx="12" cy="12.5" r="3.2"/></symbol>
+    <symbol id="i-memory" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="7" ry="3"/><path d="M5 5v6c0 1.7 3.1 3 7 3s7-1.3 7-3V5M5 11v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/></symbol>
+    <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.7 9a2.5 2.5 0 1 1 3.3 2.4c-.7.3-1 1-1 1.6M12 17h.01"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 10v6M12 7h.01"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/></symbol>
+  </svg>
+
+  <div class="desktop-stage">
+    <main class="app-shell" aria-label="小栈手机应用">
+      <a class="skip-link" href="#appContent">跳到主要内容</a>
+
+      <div id="appContent" class="screen-stack">
+        <section class="screen screen-fill" data-screen="home" aria-labelledby="home-title" hidden>
+          <header class="page-header console-header">
+            <div><span class="eyebrow">CONSOLE</span><h1 id="home-title">小栈控制台</h1></div>
+            <span class="online-pill"><i></i><span data-device-connection>正在读取</span></span>
+          </header>
+
+          <article class="glass-card console-card">
+            <div id="homeRobotMount" class="console-model-stage">
+              <span class="live-model-badge" data-model-state>3D 模型</span>
+            </div>
+            <div class="console-state-line">
+              <span class="console-dot" aria-hidden="true"></span>
+              <strong data-home-activity>正在读取设备状态…</strong>
+            </div>
+            <dl class="console-metrics">
+              <div><dt>连接网络</dt><dd data-device-ssid>正在读取</dd></div>
+              <div><dt>摄像头</dt><dd data-console-camera>正在读取</dd></div>
+            </dl>
+          </article>
+
+          <div class="direct-talk-guide">
+            <svg aria-hidden="true"><use href="#i-mic"/></svg>
+            <div><strong>直接对小栈说话</strong><p>靠近小栈，直接和它说话即可。</p></div>
+          </div>
+
+          <h2 class="content-title">小栈的功能</h2>
+          <div class="console-shortcuts" aria-label="小栈的功能">
+            <button type="button" data-target="screen"><svg aria-hidden="true"><use href="#i-remote"/></svg><span><strong>屏幕功能</strong><small>远程打开小栈里的应用</small></span><svg class="row-arrow" aria-hidden="true"><use href="#i-chevron"/></svg></button>
+            <button type="button" data-target="test"><svg aria-hidden="true"><use href="#i-grid"/></svg><span><strong>功能测试</strong><small>送出前逐项确认</small></span><svg class="row-arrow" aria-hidden="true"><use href="#i-chevron"/></svg></button>
+            <button type="button" data-target="update"><svg aria-hidden="true"><use href="#i-update"/></svg><span><strong>更新小栈</strong><small>联网更新整机</small></span><svg class="row-arrow" aria-hidden="true"><use href="#i-chevron"/></svg></button>
+            <button type="button" data-target="chat"><svg aria-hidden="true"><use href="#i-face"/></svg><span><strong>和小栈聊聊</strong><small>回到对话</small></span><svg class="row-arrow" aria-hidden="true"><use href="#i-chevron"/></svg></button>
+          </div>
+        </section>
+
+        <section class="screen" data-screen="screen" aria-labelledby="screen-title" hidden>
+          <header class="page-header product-header">
+            <div><span class="eyebrow">STACKCHAN SCREEN</span><h1 id="screen-title">小栈屏幕</h1><p>手机和屏幕使用同一套功能；小栈在线后可以直接远程打开。</p></div>
+            <span class="screen-connection" data-screen-connection>正在读取</span>
+          </header>
+          <p id="screenProgramFeedback" class="page-feedback" role="status" aria-live="polite">正在读取屏幕功能…</p>
+          <div id="screenProgramGrid" class="screen-program-grid" aria-label="小栈屏幕功能">
+            <button type="button" data-screen-program="chat" disabled><span class="program-mark">聊</span><span><strong>AI Chat</strong><small>和小栈自然对话</small></span><i>打开</i></button>
+            <button type="button" data-screen-program="quote" disabled><span class="program-mark">信</span><span><strong>小栈悄悄话</strong><small>生日彩蛋与温柔留言</small></span><i>打开</i></button>
+            <button type="button" data-screen-program="album" disabled><span class="program-mark">影</span><span><strong>相册</strong><small>翻看依婵的照片</small></span><i>打开</i></button>
+            <button type="button" data-screen-program="mood" disabled><span class="program-mark">心</span><span><strong>心情日记</strong><small>记录今天的心情</small></span><i>打开</i></button>
+            <button type="button" data-screen-program="pomodoro" disabled><span class="program-mark">专</span><span><strong>番茄钟</strong><small>开始一段专注时间</small></span><i>打开</i></button>
+            <button type="button" data-screen-program="fortune" disabled><span class="program-mark">签</span><span><strong>今日运势</strong><small>抽一张今天的小运势</small></span><i>打开</i></button>
+            <button type="button" data-screen-program="game" disabled><span class="program-mark">游</span><span><strong>游戏专区</strong><small>三款完整音效游戏</small></span><i>打开</i></button>
+            <button type="button" data-screen-program="settings" disabled><span class="program-mark">设</span><span><strong>系统设置</strong><small>网络、亮度与设备信息</small></span><i>打开</i></button>
+          </div>
+          <section class="device-tool-panel" aria-labelledby="device-tools-title">
+            <div><span class="eyebrow">DEVICE TOOLS</span><h2 id="device-tools-title">设备工具</h2><p>保留原来的精细控制与送出前测试。</p></div>
+            <div><button type="button" data-target="remote">遥控头部 <svg aria-hidden="true"><use href="#i-chevron"/></svg></button><button type="button" data-target="test">功能测试 <svg aria-hidden="true"><use href="#i-chevron"/></svg></button></div>
+          </section>
+        </section>
+
+        <section class="screen screen-fill chat-screen is-active" data-screen="chat" aria-labelledby="chat-title">
+          <header class="page-header chat-header">
+            <div class="chat-companion-mark" aria-hidden="true"><span></span><span></span></div>
+            <div class="chat-heading">
+              <h1 id="chat-title">和小栈聊聊</h1>
+              <p><span class="online-pill"><i></i><span data-device-connection>正在读取</span></span><span class="status-sep" aria-hidden="true">·</span><span id="chatModelState" class="model-state">智能模式</span></p>
+            </div>
+            <button id="cameraPanelToggle" class="icon-button" type="button" aria-expanded="false" aria-controls="cameraPanel" aria-label="看看小栈现在看到的画面">
+              <svg aria-hidden="true"><use href="#i-camera"/></svg>
+            </button>
+          </header>
+          <div id="chatLog" class="chat-log" role="log" aria-live="polite" aria-relevant="additions text">
+            <article class="chat-bubble assistant"><span>小栈</span><p>我在这里。想做计划、练雅思，或者只是想说两句，都可以告诉我。</p></article>
+          </div>
+          <div class="chat-quick-prompts" aria-label="快捷问题">
+            <button type="button" data-chat-prompt="帮我做一个今天就能完成的雅思小计划">雅思小计划</button>
+            <button type="button" data-chat-prompt="我今天有点没信心，陪我理一理">给我打打气</button>
+            <button type="button" data-chat-prompt="推荐一件现在做了会开心的小事">找点小快乐</button>
+          </div>
+          <form id="chatComposer" class="chat-composer">
+            <label class="sr-only" for="chatMessageInput">发给小栈的消息</label>
+            <textarea id="chatMessageInput" name="message" rows="1" maxlength="2000" placeholder="给小栈发消息…" autocomplete="off"></textarea>
+            <button id="chatSendButton" type="submit" aria-label="发送消息"><svg aria-hidden="true"><use href="#i-update"/></svg></button>
+            <p id="chatFeedback" role="status" aria-live="polite"></p>
+          </form>
+        </section>
+
+        <section class="screen screen-fill" data-screen="remote" aria-labelledby="remote-title" hidden>
+          <header class="page-header compact-header"><h1 id="remote-title">遥控</h1><p>按住圆圈拖动，小栈会实时跟着转</p></header>
+          <article class="glass-card remote-card">
+            <div id="remoteRobotMount" class="robot-stage">
+              <span class="live-model-badge">3D 预览</span>
+              <canvas id="robotPreviewCanvas" class="robot-preview-canvas" tabindex="0" aria-label="小栈实时 3D 模型，拖动可控制头部" data-yaw="0" data-pitch="45"></canvas>
+              <div id="robotPreviewFallback" class="robot-preview-fallback" role="status" aria-live="polite">正在加载小栈 3D 模型…</div>
+            </div>
+            <div class="pose-copy"><h2 id="poseTitle">左右 0° · 俯仰 6°</h2><p id="remoteDeviceStatus">本地预览 · 等待设备确认</p></div>
+            <div class="remote-controls">
+              <div class="joystick-block">
+                <div id="joystick" class="joystick" role="slider" tabindex="0" aria-label="头部方向" aria-valuemin="-128" aria-valuemax="128" aria-valuenow="0" aria-valuetext="正前方"><span class="joystick-ring" aria-hidden="true"></span><span class="direction up" aria-hidden="true">⌃</span><span class="direction left" aria-hidden="true">‹</span><span class="direction right" aria-hidden="true">›</span><span class="direction down" aria-hidden="true">⌄</span><span id="joystickKnob" class="joystick-knob"></span></div>
+              </div>
+              <div class="speed-block">
+                <h3>转动速度</h3>
+                <div class="speed-dots" role="radiogroup" aria-label="转动速度">
+                  <button type="button" class="speed-dot" role="radio" aria-checked="false" data-speed-level="0"><span>安静</span></button>
+                  <button type="button" class="speed-dot" role="radio" aria-checked="false" data-speed-level="1"><span>轻柔</span></button>
+                  <button type="button" class="speed-dot is-active" role="radio" aria-checked="true" data-speed-level="2"><span>自然</span></button>
+                  <button type="button" class="speed-dot" role="radio" aria-checked="false" data-speed-level="3"><span>活泼</span></button>
+                </div>
+              </div>
+            </div>
+          </article>
+        </section>
+
+        <section class="screen" data-screen="test" aria-labelledby="test-title" hidden>
+          <header class="page-header"><h1 id="test-title">测试</h1><p>送出前与更新后，逐项确认小栈功能</p></header>
+          <p class="page-feedback" data-page-feedback role="status" aria-live="polite" hidden></p>
+          <article class="glass-card current-action-card">
+            <div class="section-head"><h2>现在的动作</h2><span class="standby" role="status" aria-live="polite" data-state="idle"><span id="actionRunState">待命中</span><i></i></span></div>
+            <div class="current-action-body"><img src="./assets/action-robot.webp?v=6" alt="正在点头的小栈" width="660" height="640" loading="lazy"><div><h3 id="currentActionTitle">认真听</h3><p id="currentActionDescription">抬头看你，专注回应</p><button id="executeAction" class="primary-action" type="button" data-requires-device disabled><svg aria-hidden="true"><use href="#i-play"/></svg><span>执行动作</span></button></div></div>
+          </article>
+          <h2 class="content-title">常用动作</h2>
+          <div class="action-grid">
+            <button class="action-tile" type="button" data-preset="cheer" data-action="开心营业" data-description="元气地和你打招呼" data-category="greeting" aria-pressed="false"><img src="./assets/settings-robot.webp" alt="" width="615" height="525" loading="lazy"><span><strong>开心营业</strong><small>元气地和你打招呼</small></span></button>
+            <button class="action-tile is-selected" type="button" data-preset="listen" data-action="认真听" data-description="抬头看你，专注回应" data-category="companion" aria-pressed="true"><img src="./assets/settings-robot.webp" alt="" width="615" height="525" loading="lazy"><span><strong>认真听</strong><small>抬头看你，专注回应</small></span><b class="check">✓</b></button>
+            <button class="action-tile" type="button" data-preset="nod" data-action="给你加油" data-description="认真点头，给你鼓励" data-category="companion" aria-pressed="false"><img src="./assets/settings-robot.webp" alt="" width="615" height="525" loading="lazy"><span><strong>给你加油</strong><small>认真点头，给你鼓励</small></span></button>
+            <button class="action-tile" type="button" data-preset="shy" data-action="害羞一下" data-description="低头躲闪，悄悄开心" data-category="companion" aria-pressed="false"><img src="./assets/settings-robot.webp" alt="" width="615" height="525" loading="lazy"><span><strong>害羞一下</strong><small>低头躲闪，悄悄开心</small></span></button>
+            <button class="action-tile" type="button" data-preset="ielts_focus" data-action="雅思监督" data-description="提醒你回到学习节奏" data-category="study" aria-pressed="false"><img src="./assets/settings-robot.webp" alt="" width="615" height="525" loading="lazy"><span><strong>雅思监督</strong><small>提醒你回到学习节奏</small></span></button>
+            <button class="action-tile" type="button" data-preset="sleep" data-action="低亮休息" data-description="安静陪伴，准备休息" data-category="rest" aria-pressed="false"><img src="./assets/settings-robot.webp" alt="" width="615" height="525" loading="lazy"><span><strong>低亮休息</strong><small>安静陪伴，准备休息</small></span></button>
+          </div>
+          <h2 class="content-title">硬件测试</h2>
+          <div class="test-grid">
+            <article class="glass-card test-card">
+              <div class="section-head"><div><h2>屏幕亮度</h2><p>发送一个临时亮度值</p></div><output id="testBrightnessValue">待测试</output></div>
+              <input id="testBrightness" type="range" min="1" max="100" value="78" aria-label="测试屏幕亮度" data-requires-device disabled>
+              <button id="testBrightnessButton" class="secondary-action" type="button" data-requires-device disabled>发送亮度测试</button>
+            </article>
+            <article class="glass-card test-card">
+              <div class="section-head"><div><h2>扬声器</h2><p>播放设备内置测试音</p></div><span id="testSoundState" role="status" aria-live="polite">待测试</span></div>
+              <label class="field-label" for="testSoundSelect">测试声音</label>
+              <select id="testSoundSelect" aria-label="测试声音" data-requires-device disabled><option value="">正在读取内置声音…</option></select>
+              <label class="field-label" for="testVolume">测试音量 <output id="testVolumeValue">待测试</output></label>
+              <input id="testVolume" type="range" min="0" max="100" value="58" aria-label="测试扬声器音量" data-requires-device disabled>
+              <button id="testSoundButton" class="secondary-action" type="button" data-requires-device disabled>播放测试音</button>
+            </article>
+          </div>
+        </section>
+
+        <section class="screen" data-screen="update" aria-labelledby="update-title" hidden>
+          <header class="page-header"><h1 id="update-title">更新</h1><p>联网更新小栈，无需数据线</p></header>
+          <article class="glass-card update-hero">
+            <div class="update-hero-icon"><svg aria-hidden="true"><use href="#i-update"/></svg></div>
+            <div><span id="updateConnection" class="status-kicker">正在确认设备连接</span><h2 id="updateState">正在读取更新状态</h2><p id="updateMessage">请保持手机、小栈和配套电脑在同一网络。</p></div>
+          </article>
+          <article class="glass-card update-card">
+            <div class="section-head"><div><h2>整机版本</h2><p id="updateVersion">当前版本正在读取</p></div><span class="signed-badge">签名验证</span></div>
+            <div id="updateComponentList" class="update-component-list" aria-live="polite"><p class="empty-state">正在读取四个更新组件…</p></div>
+            <div id="updateProgress" class="update-progress" hidden><progress id="updateProgressValue" max="100" value="0" aria-label="整机更新进度"></progress><span>0%</span></div>
+            <p id="updateFeedback" class="inline-feedback" role="status" aria-live="polite"></p>
+            <div class="update-actions"><button id="updateCheckButton" class="secondary-action" type="button">检查更新</button><button id="updatePrimaryButton" class="primary-action" type="button" hidden></button></div>
+          </article>
+          <aside class="update-safety"><strong>更新期间请勿断电</strong><p>安装会依次更新屏幕资源、小栈软件和配套端；重启并重新连上后才算完成。</p></aside>
+        </section>
+
+        <section class="screen" data-screen="settings" aria-labelledby="settings-title" hidden>
+          <header class="page-header"><h1 id="settings-title">设置</h1><p>把小栈调整成你喜欢的样子</p></header>
+          <article class="glass-card device-card"><img src="./assets/settings-robot.webp?v=6" alt="小栈设备" width="615" height="525" loading="lazy"><div><h2>小栈</h2><p><strong data-device-connection>正在读取</strong><span>小栈电量未上报</span></p></div><button type="button" data-settings-route="device">设备详情 <svg aria-hidden="true"><use href="#i-chevron"/></svg></button></article>
+          <section class="glass-card settings-group"><h2>陪伴方式</h2><button class="settings-row" type="button" data-settings-route="companion"><svg aria-hidden="true"><use href="#i-user"/></svg><span>陪伴方式</span><small>称呼、风格与回应</small><svg aria-hidden="true"><use href="#i-chevron"/></svg></button><button class="settings-row" type="button" data-settings-route="voice"><svg aria-hidden="true"><use href="#i-volume"/></svg><span>声音与语气</span><small>声音列表</small><svg aria-hidden="true"><use href="#i-chevron"/></svg></button><button class="settings-row" type="button" data-settings-route="auto-response"><svg aria-hidden="true"><use href="#i-auto"/></svg><span>自动回应</span><small>环顾、跟随与提示</small><svg aria-hidden="true"><use href="#i-chevron"/></svg></button></section>
+          <section class="glass-card settings-group"><h2>小栈</h2><button class="settings-row" type="button" data-target="home"><svg aria-hidden="true"><use href="#i-grid"/></svg><span>小栈控制台</span><small>状态与功能</small><svg aria-hidden="true"><use href="#i-chevron"/></svg></button></section>
+          <section class="glass-card settings-group"><h2>设备控制</h2><button class="settings-row" type="button" data-settings-route="network"><svg aria-hidden="true"><use href="#i-wifi"/></svg><span>Wi-Fi 与网络</span><small data-device-ssid>正在读取</small><svg aria-hidden="true"><use href="#i-chevron"/></svg></button><button class="settings-row" type="button" data-settings-route="display"><svg aria-hidden="true"><use href="#i-sun"/></svg><span>屏幕与亮度</span><small>亮度设置</small><svg aria-hidden="true"><use href="#i-chevron"/></svg></button></section>
+          <section class="glass-card settings-group"><h2>隐私与帮助</h2><button class="settings-row" type="button" data-settings-route="memory"><svg aria-hidden="true"><use href="#i-memory"/></svg><span>对话与记忆</span><small>隐私与内容</small><svg aria-hidden="true"><use href="#i-chevron"/></svg></button><button class="settings-row" type="button" data-settings-route="help"><svg aria-hidden="true"><use href="#i-help"/></svg><span>使用帮助</span><svg aria-hidden="true"><use href="#i-chevron"/></svg></button><button class="settings-row" type="button" data-settings-route="about"><svg aria-hidden="true"><use href="#i-info"/></svg><span>关于小栈</span><small>版本与署名</small><svg aria-hidden="true"><use href="#i-chevron"/></svg></button></section>
+        </section>
+        <section id="settingsDetail" class="settings-detail" aria-labelledby="settingsDetailTitle" hidden>
+          <header class="settings-detail-header"><button id="settingsBackButton" type="button" aria-label="返回设置"><span aria-hidden="true">‹</span></button><h1 id="settingsDetailTitle" tabindex="-1">设置详情</h1><span aria-hidden="true"></span></header>
+          <div id="settingsDetailSync" class="settings-detail-sync" data-state="loading" role="status" aria-live="polite">正在连接小栈…</div>
+          <div id="settingsDetailStatus" class="settings-detail-status" role="status" aria-live="polite"></div>
+          <div id="settingsDetailBody" class="settings-detail-body"></div>
+          <div id="settingsSaveArea" class="settings-save-area" hidden><button id="settingsSaveButton" class="primary-action" type="button">保存设置</button></div>
+        </section>
+      </div>
+
+      <div id="cameraPanel" class="camera-panel" hidden role="dialog" aria-label="小栈摄像头画面">
+        <div class="camera-panel-card">
+          <div class="camera-panel-head">
+            <div><span class="eyebrow">小栈视角</span><h2>小栈现在看到的</h2></div>
+            <button id="cameraPanelClose" class="icon-button" type="button" aria-label="收起画面"><svg aria-hidden="true"><use href="#i-close"/></svg></button>
+          </div>
+          <div class="camera-frame">
+            <img id="cameraFrame" alt="小栈摄像头实时画面" width="640" height="360" decoding="async">
+            <p id="cameraFrameState" class="camera-frame-state" role="status" aria-live="polite">正在连接小栈…</p>
+          </div>
+          <p class="camera-hint">画面来自小栈自己的摄像头，只有你打开时才会出现。</p>
+        </div>
+      </div>
+
+      <nav class="tab-bar" aria-label="主导航">
+        <button class="tab-button is-active" type="button" data-target="chat"><svg aria-hidden="true"><use href="#i-face"/></svg><span>对话</span></button>
+        <button class="tab-button" type="button" data-target="remote"><svg aria-hidden="true"><use href="#i-remote"/></svg><span>遥控</span></button>
+        <button class="tab-button" type="button" data-target="settings"><svg aria-hidden="true"><use href="#i-gear"/></svg><span>设置</span></button>
+      </nav>
+    </main>
+  </div>
+  <script type="module" src="./robot_3d.js?v=29"></script>
+  <script type="module" src="./app.js?v=29"></script>
+</body>
+</html>

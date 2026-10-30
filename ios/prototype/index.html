@@ -1,0 +1,674 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="小栈">
+<meta name="theme-color" content="#f7f3ee">
+<title>小栈 · 陪伴</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<style>
+:root{
+  color-scheme:light;
+  --canvas:#f7f3ee; --surface:#fffdfb; --surface-soft:#fbf6f0;
+  --ink:#251f1b; --muted:#857a71; --line:#eaded3;
+  --accent:#c76a31; --accent-strong:#a94f1e; --accent-soft:#f5ddcd;
+  --green:#3fa77d; --green-soft:#e8f5ef;
+  --blue:#4d7fe8; --blue-soft:#eaf0fd;
+  --pink:#df776b; --pink-soft:#fae9e6;
+  --shadow:0 12px 32px rgba(75,53,38,.08);
+  --shadow-sm:0 4px 14px rgba(75,53,38,.06);
+  --safe-b:env(safe-area-inset-bottom,0px);
+  --safe-t:env(safe-area-inset-top,0px);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--canvas);overscroll-behavior:none}
+body{
+  color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","PingFang SC","Helvetica Neue",sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+input,textarea{font:inherit;color:inherit}
+
+/* ---------- phone shell ---------- */
+.phone{
+  width:min(100%,430px);height:100dvh;margin:0 auto;position:relative;overflow:hidden;
+  background:radial-gradient(circle at 88% 13%,rgba(245,221,205,.76),transparent 26%),var(--canvas);
+  display:flex;flex-direction:column;
+}
+.statusbar{
+  height:calc(50px + var(--safe-t));padding:calc(13px + var(--safe-t)) 24px 0;
+  display:grid;grid-template-columns:1fr auto 1fr;align-items:start;font-size:15px;font-weight:650;
+  letter-spacing:-.2px;position:relative;z-index:30;flex:none;
+}
+.island{width:118px;height:34px;margin-top:-8px;border-radius:22px;background:#0d0d0d;box-shadow:inset 0 0 0 1px rgba(255,255,255,.05)}
+.sysicons{justify-self:end;display:flex;align-items:end;gap:6px;padding-top:2px}
+.signal{display:flex;align-items:end;gap:2px;height:12px}
+.signal i{display:block;width:3px;border-radius:2px;background:var(--ink)}
+.signal i:nth-child(1){height:4px}.signal i:nth-child(2){height:7px}.signal i:nth-child(3){height:10px}
+.wifi{width:15px;height:11px;border:2px solid var(--ink);border-color:var(--ink) transparent transparent;border-radius:50%;transform:translateY(4px)}
+.batt{width:23px;height:11px;border:1.8px solid var(--ink);border-radius:3px;padding:1.5px;position:relative}
+.batt::before{content:"";display:block;height:100%;width:75%;border-radius:1px;background:var(--ink)}
+.batt::after{content:"";position:absolute;right:-3.5px;top:2.6px;width:2px;height:4px;border-radius:0 2px 2px 0;background:var(--ink)}
+
+/* ---------- screens ---------- */
+.viewport{flex:1;position:relative;overflow:hidden}
+.screen{
+  position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;
+  padding:6px 18px calc(108px + var(--safe-b));
+  opacity:0;transform:translateX(22px);pointer-events:none;transition:opacity .22s ease,transform .26s cubic-bezier(.32,.72,0,1);
+}
+.screen.active{opacity:1;transform:none;pointer-events:auto}
+.screen.back{transform:translateX(-22px)}
+
+/* ---------- shared ---------- */
+.topbar{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
+.eyebrow{margin:0 0 2px;color:var(--muted);font-size:13px;font-weight:520}
+h1{margin:0;font-size:29px;line-height:1.08;letter-spacing:-.8px}
+h2.sub{margin:0 0 3px;font-size:20px;letter-spacing:-.4px}
+.lede{margin:0;color:var(--muted);font-size:13px;line-height:1.45}
+.pill{display:inline-flex;align-items:center;gap:7px;padding:0 12px;height:32px;border-radius:16px;font-size:13px;font-weight:650;white-space:nowrap}
+.pill.ok{color:#237557;background:rgba(232,245,239,.9);border:1px solid #cfe9dc}
+.pill.ok::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 0 4px rgba(63,167,125,.12)}
+.pill.warn{color:var(--accent-strong);background:var(--accent-soft);border:1px solid #e7c8b1}
+.card{background:rgba(255,253,251,.94);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow);padding:16px}
+.sec{margin-top:16px}
+.sec-title{margin:0 0 9px;font-size:12px;font-weight:700;letter-spacing:.6px;color:var(--muted);text-transform:uppercase}
+.row{display:flex;align-items:center;gap:11px;min-height:48px;padding:11px 13px;border-bottom:1px solid var(--line)}
+.row:last-child{border-bottom:0}
+.row .ic{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;flex:none}
+.row .ic svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.row .tx{flex:1;min-width:0}
+.row .tx b{display:block;font-size:15px;font-weight:600;letter-spacing:-.2px}
+.row .tx small{display:block;color:var(--muted);font-size:12px;margin-top:2px;line-height:1.35}
+.row .val{color:var(--muted);font-size:14px;flex:none}
+.chev{color:#b2a69c;font-size:20px;flex:none;line-height:1}
+.list{border:1px solid var(--line);border-radius:16px;overflow:hidden;background:rgba(255,253,251,.86)}
+.groupfoot{margin:7px 14px 0;color:var(--muted);font-size:12px;line-height:1.4}
+.switch{width:49px;height:29px;border-radius:15px;background:#d9d3cd;position:relative;flex:none;transition:background .2s}
+.switch::after{content:"";position:absolute;top:2px;left:2px;width:25px;height:25px;border-radius:50%;background:#fff;box-shadow:0 2px 5px rgba(0,0,0,.18);transition:transform .2s}
+.switch.on{background:var(--green)}
+.switch.on::after{transform:translateX(20px)}
+
+/* ---------- tabbar ---------- */
+.tabbar{
+  position:absolute;z-index:30;left:12px;right:12px;bottom:max(9px,var(--safe-b));height:74px;
+  padding:7px 6px calc(11px);border:1px solid rgba(226,212,201,.9);border-radius:24px;
+  background:rgba(255,253,251,.9);-webkit-backdrop-filter:blur(22px);backdrop-filter:blur(22px);
+  box-shadow:0 12px 34px rgba(62,42,28,.13);display:grid;grid-template-columns:repeat(5,1fr);
+}
+.tab{display:grid;justify-items:center;align-content:center;gap:4px;color:#9a8e84;font-size:10px;font-weight:600;position:relative}
+.tab svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.tab.on{color:var(--accent)}
+.tab.on::after{content:"";position:absolute;bottom:4px;width:4px;height:4px;border-radius:50%;background:var(--accent)}
+
+/* ---------- home ---------- */
+.hero{min-height:352px;display:grid;grid-template-rows:auto 1fr auto;overflow:hidden;position:relative}
+.hero::after{content:"";position:absolute;width:230px;height:230px;left:50%;top:56px;transform:translateX(-50%);border-radius:50%;background:linear-gradient(145deg,#f8e7dc,#f0eef4);z-index:0}
+.hero-head{display:flex;align-items:center;justify-content:space-between;position:relative;z-index:2}
+.mood{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:650;color:var(--accent-strong)}
+.mood::before{content:"";width:8px;height:8px;border-radius:50%;background:#e89b66;box-shadow:0 0 0 4px rgba(232,155,102,.16)}
+.more{width:34px;height:34px;border:1px solid var(--line);border-radius:17px;background:var(--surface);color:var(--muted);font-size:19px;line-height:1}
+.stage{min-height:206px;display:grid;place-items:center;position:relative;z-index:1}
+.device{
+  width:186px;height:186px;border-radius:34px;position:relative;
+  background:linear-gradient(160deg,#fdf6f0,#efe9f3);box-shadow:0 18px 26px rgba(56,45,38,.12);
+  display:grid;place-items:center;transition:transform .3s cubic-bezier(.34,1.56,.64,1);
+}
+.device.turn{transform:rotate(-7deg) scale(1.02)}
+.device .face{font-size:64px;letter-spacing:5px;color:#2a2725;line-height:1;user-select:none}
+.device .ring{position:absolute;inset:14px;border-radius:24px;border:1px solid rgba(201,106,49,.22)}
+.devcap{text-align:center;position:relative;z-index:2}
+.devcap h3{margin:0;font-size:19px;letter-spacing:-.3px}
+.devcap p{margin:5px 0 13px;color:var(--muted);font-size:13px}
+.talk{
+  width:100%;min-height:50px;border-radius:15px;display:flex;align-items:center;justify-content:center;gap:9px;
+  color:#fff;background:var(--accent);font-size:16px;font-weight:700;box-shadow:0 8px 18px rgba(199,106,49,.22);transition:transform .12s;
+}
+.talk:active{transform:scale(.975)}
+.talk.rec{background:#c0392b}
+.talk svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2.1;stroke-linecap:round}
+.quick{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:14px}
+.qa{min-height:72px;padding:10px 6px;border:1px solid var(--line);border-radius:17px;background:rgba(255,253,251,.9);display:grid;justify-items:center;align-content:center;gap:7px;font-size:13px;font-weight:650}
+.qa .qi{width:30px;height:30px;border-radius:11px;display:grid;place-items:center}
+.qa .qi svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.qa:nth-child(1) .qi{color:var(--pink);background:var(--pink-soft)}
+.qa:nth-child(2) .qi{color:var(--blue);background:var(--blue-soft)}
+.qa:nth-child(3) .qi{color:var(--accent);background:var(--accent-soft)}
+.note{display:grid;grid-template-columns:38px 1fr auto;align-items:center;gap:10px;padding:12px 14px;border:1px solid var(--line);border-radius:18px;background:rgba(255,253,251,.86);width:100%;text-align:left}
+.miniface{width:38px;height:38px;border-radius:13px;display:grid;place-items:center;background:#2a2725;color:#fff;font-size:15px;letter-spacing:3px;padding-left:3px}
+.note b{display:block;font-size:13px;margin-bottom:3px}
+.note p{margin:0;color:var(--muted);font-size:12px;line-height:1.35}
+
+/* ---------- chat ---------- */
+.chatwrap{display:flex;flex-direction:column;height:100%}
+.bubbles{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:11px;padding:4px 0 12px}
+.b{max-width:78%;padding:11px 14px;border-radius:19px;font-size:15px;line-height:1.48;letter-spacing:-.1px;white-space:pre-wrap}
+.b.me{align-self:flex-end;background:var(--accent);color:#fff;border-bottom-right-radius:7px}
+.b.it{align-self:flex-start;background:var(--surface);border:1px solid var(--line);border-bottom-left-radius:7px}
+.b .stamp{display:block;font-size:10px;color:var(--muted);margin-top:5px}
+.b.me .stamp{color:rgba(255,255,255,.75)}
+.composer{display:flex;align-items:flex-end;gap:9px;padding:9px 12px calc(9px + var(--safe-b));background:rgba(247,243,238,.94);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);border-top:1px solid var(--line)}
+.composer input{flex:1;height:42px;border-radius:21px;border:1px solid var(--line);background:var(--surface);padding:0 16px;font-size:15px;outline:none}
+.composer input:focus{border-color:var(--accent)}
+.voicebtn{width:42px;height:42px;border-radius:21px;background:var(--accent);display:grid;place-items:center;flex:none}
+.voicebtn svg{width:19px;height:19px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round}
+
+/* ---------- remote / joystick ---------- */
+.joy-wrap{display:grid;place-items:center;padding:6px 0 4px}
+.joy{
+  width:236px;height:236px;border-radius:50%;position:relative;touch-action:none;
+  background:radial-gradient(circle at 50% 42%,#fffdfb,#f3ece4);border:1px solid var(--line);
+  box-shadow:inset 0 2px 12px rgba(75,53,38,.07),var(--shadow-sm);
+}
+.joy .cross{position:absolute;inset:0}
+.joy .cross::before,.joy .cross::after{content:"";position:absolute;background:var(--line)}
+.joy .cross::before{left:14px;right:14px;top:50%;height:1px}
+.joy .cross::after{top:14px;bottom:14px;left:50%;width:1px}
+.joy .knob{
+  position:absolute;width:66px;height:66px;border-radius:50%;left:50%;top:50%;margin:-33px 0 0 -33px;
+  background:linear-gradient(160deg,#fffdfb,#f0e7dd);border:1px solid #e3d6c9;box-shadow:0 6px 14px rgba(75,53,38,.18);
+  display:grid;place-items:center;transition:transform .05s linear;
+}
+.joy .knob::after{content:"";width:20px;height:20px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 5px var(--accent-soft)}
+.joy .lbl{position:absolute;font-size:10px;color:var(--muted);font-weight:600;letter-spacing:.3px}
+.joy .lbl.n{top:8px;left:50%;transform:translateX(-50%)}
+.joy .lbl.s{bottom:8px;left:50%;transform:translateX(-50%)}
+.joy .lbl.w{left:9px;top:50%;transform:translateY(-50%)}
+.joy .lbl.e{right:9px;top:50%;transform:translateY(-50%)}
+.readout{display:flex;gap:10px;justify-content:center;margin-top:12px}
+.rd{min-width:84px;text-align:center;padding:8px 10px;border:1px solid var(--line);border-radius:13px;background:var(--surface)}
+.rd b{display:block;font-size:19px;font-variant-numeric:tabular-nums;letter-spacing:-.4px}
+.rd small{font-size:10px;color:var(--muted);font-weight:600;letter-spacing:.4px}
+.gesture-zone{
+  height:132px;border:2px dashed var(--line);border-radius:20px;background:rgba(255,253,251,.6);
+  display:grid;place-items:center;text-align:center;position:relative;overflow:hidden;touch-action:none;
+}
+.gesture-zone.live{border-color:var(--accent);background:var(--accent-soft)}
+.gz-in{position:relative;z-index:2;pointer-events:none}
+.gz-in .dot{width:16px;height:16px;border-radius:50%;background:var(--accent);margin:0 auto 8px;box-shadow:0 0 0 8px rgba(199,106,49,.14)}
+.gz-in b{display:block;font-size:14px}
+.gz-in small{display:block;color:var(--muted);font-size:11.5px;margin-top:4px;line-height:1.4}
+.gz-hand{position:absolute;width:42px;height:42px;border-radius:50%;background:rgba(199,106,49,.22);border:2px solid var(--accent);display:none;z-index:1}
+.emotions{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+.emo{aspect-ratio:1;border:1px solid var(--line);border-radius:16px;background:var(--surface);display:grid;place-items:center;gap:3px;font-size:9.5px;color:var(--muted);font-weight:600;padding:4px}
+.emo .ef{width:38px;height:38px;border-radius:50%;background:#efe7de;display:grid;place-items:center;font-size:19px;color:#2a2725}
+.emo.on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-strong)}
+.emo.on .ef{background:#fff}
+.colors{display:flex;gap:9px;flex-wrap:wrap}
+.sw{width:42px;height:42px;border-radius:50%;border:2px solid transparent;box-shadow:inset 0 0 0 1px rgba(0,0,0,.05)}
+.sw.on{border-color:var(--ink);transform:scale(1.08)}
+
+/* ---------- motion ---------- */
+.motionlist{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.mo{min-height:104px;border:1px solid var(--line);border-radius:18px;background:var(--surface);display:grid;place-items:center;gap:6px;padding:12px;text-align:center}
+.mo .mf{font-size:30px}
+.mo b{font-size:13px;font-weight:600}
+.mo small{color:var(--muted);font-size:11px}
+.mo:active{transform:scale(.97)}
+
+/* ---------- settings (apple style) ---------- */
+.srow{display:flex;align-items:center;gap:11px;min-height:50px;padding:11px 14px;border-bottom:1px solid var(--line);background:transparent;width:100%;text-align:left}
+.srow:last-child{border-bottom:0}
+.srow:active{background:rgba(0,0,0,.03)}
+.srow .si{width:29px;height:29px;border-radius:7px;display:grid;place-items:center;flex:none;color:#fff}
+.srow .si svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.srow .st{flex:1;font-size:16px;letter-spacing:-.2px}
+.srow .sv{color:var(--muted);font-size:15px;flex:none;max-width:46%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.backbar{display:flex;align-items:center;gap:6px;color:var(--accent);font-size:16px;margin:2px 0 12px -6px;padding:6px}
+.backbar svg{width:11px;height:19px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+
+/* ---------- live activity ---------- */
+.la{
+  margin:14px auto 0;width:338px;border-radius:26px;background:#0d0d0d;color:#fff;padding:15px 18px;
+  box-shadow:0 18px 40px rgba(0,0,0,.28);position:relative;overflow:hidden;
+}
+.la .top{display:flex;align-items:center;gap:10px}
+.la .laf{width:38px;height:38px;border-radius:12px;background:linear-gradient(150deg,#f8e7dc,#efe9f3);display:grid;place-items:center;color:#2a2725;font-size:19px}
+.la b{display:block;font-size:15px}
+.la small{color:rgba(255,255,255,.62);font-size:12px}
+.la .wave{margin-top:11px;height:26px;display:flex;align-items:center;gap:3px}
+.la .wave i{flex:1;background:#c76a31;border-radius:2px;height:30%}
+.hint{text-align:center;color:var(--muted);font-size:11.5px;margin-top:10px;line-height:1.5}
+.badge{display:inline-block;padding:2px 7px;border-radius:6px;background:var(--blue-soft);color:#2f5fc4;font-size:10.5px;font-weight:700;letter-spacing:.3px}
+</style>
+</head>
+<body>
+<div class="phone">
+  <header class="statusbar" aria-hidden="true">
+    <span id="clock">9:41</span><span class="island"></span>
+    <span class="sysicons"><span class="signal"><i></i><i></i><i></i></span><span class="wifi"></span><span class="batt"></span></span>
+  </header>
+
+  <div class="viewport" id="viewport">
+
+    <!-- ============ 陪伴 ============ -->
+    <section class="screen active" id="s-home">
+      <div class="topbar">
+        <div><p class="eyebrow" id="greet">下午好，蒋磊</p><h1>小栈</h1></div>
+        <span class="pill ok" id="conn">已连接</span>
+      </div>
+
+      <article class="card hero">
+        <div class="hero-head"><span class="mood" id="moodtxt">陪伴中</span><button class="more" onclick="toast('更多')">···</button></div>
+        <div class="stage"><div class="device" id="device"><div class="ring"></div><div class="face" id="face">••</div></div></div>
+        <div class="devcap">
+          <h3 id="say">今天也想认真陪你</h3>
+          <p id="act">我在看着你，随时可以和我说话。</p>
+          <button class="talk" id="talkbtn">
+            <svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="12" rx="3" fill="none" stroke="currentColor"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M8.5 21h7" fill="none" stroke="currentColor" stroke-linecap="round"/></svg>
+            <span id="talklabel">按住和小栈说话</span>
+          </button>
+        </div>
+      </article>
+
+      <section class="quick">
+        <button class="qa" onclick="act('看着我')"><span class="qi"><svg viewBox="0 0 24 24"><path d="M4 12c2.3-3.5 5-5.2 8-5.2S17.7 8.5 20 12c-2.3 3.5-5 5.2-8 5.2S6.3 15.5 4 12Z"/><circle cx="12" cy="12" r="2.4"/></svg></span>看着我</button>
+        <button class="qa" onclick="act('拍张照')"><span class="qi"><svg viewBox="0 0 24 24"><path d="M4 8.5h3l1.4-2h7.2l1.4 2h3v10H4Z"/><circle cx="12" cy="13.2" r="3.2"/></svg></span>拍张照</button>
+        <button class="qa" onclick="act('播音乐')"><span class="qi"><svg viewBox="0 0 24 24"><path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></svg></span>播音乐</button>
+      </section>
+
+      <div class="sec">
+        <button class="note" onclick="go('chat')">
+          <span class="miniface">••</span>
+          <span><b>小栈刚刚说</b><p id="notebody">我在呢，忙完记得抬头看看我。</p></span>
+          <span class="chev">›</span>
+        </button>
+      </div>
+
+      <div class="sec">
+        <p class="sec-title">实时活动</p>
+        <div class="la">
+          <div class="top">
+            <span class="laf">••</span>
+            <span><b>小栈在陪你</b><small>已连接 · 心情不错 · 21:40</small></span>
+          </div>
+          <div class="wave"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        </div>
+        <p class="hint">灵动岛 / 锁屏实时活动 · 真正的 iOS 端由 ActivityKit 实现</p>
+      </div>
+    </section>
+
+    <!-- ============ 对话 ============ -->
+    <section class="screen" id="s-chat" style="padding:6px 18px 0;display:flex;flex-direction:column">
+      <div class="topbar">
+        <div><p class="eyebrow">它记得你</p><h1>对话</h1></div>
+        <span class="pill ok">心情不错</span>
+      </div>
+      <div class="chatwrap" style="flex:1;min-height:0">
+        <div class="bubbles" id="bubbles">
+          <div class="b it">你今天那个方案救回来了诶<span class="stamp">21:32</span></div>
+          <div class="b me">差点就放弃了，还是不甘心<span class="stamp">21:33</span></div>
+          <div class="b it">所以我就说，你不是做不到，是不想认输。<span class="stamp">21:33</span></div>
+          <div class="b me">哈哈哈哈被你说中了<span class="stamp">21:34</span></div>
+          <div class="b it">那你今晚还练那套吗？我给你留着灯<span class="stamp">21:34</span></div>
+        </div>
+        <button class="note" style="margin-bottom:9px" onclick="go('you')">
+          <span class="miniface">☺</span>
+          <span><b>它眼中的你</b><p>你最近在推进一个方案 · 有点累 · 讨厌被说教</p></span>
+          <span class="chev">›</span>
+        </button>
+        <div class="composer">
+          <input placeholder="跟小栈说点什么…" id="msg" onkeydown="if(event.key==='Enter')send()">
+          <button class="voicebtn" onclick="holdVoice(this)"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="12" rx="3" fill="none" stroke="currentColor"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3" fill="none" stroke="currentColor" stroke-linecap="round"/></svg></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 遥控 ============ -->
+    <section class="screen" id="s-remote">
+      <div class="topbar">
+        <div><p class="eyebrow">实时 · 零延迟</p><h1>遥控</h1></div>
+        <span class="pill ok">已连接</span>
+      </div>
+
+      <article class="card">
+        <p class="sec-title" style="margin-top:0">舵机 · 摇杆</p>
+        <div class="joy-wrap">
+          <div class="joy" id="joy">
+            <div class="cross"></div>
+            <span class="lbl n">抬头</span><span class="lbl s">低头</span>
+            <span class="lbl w">左</span><span class="lbl e">右</span>
+            <div class="knob" id="knob"></div>
+          </div>
+        </div>
+        <div class="readout">
+          <div class="rd"><b id="yawv">0°</b><small>YAW 水平</small></div>
+          <div class="rd"><b id="pitchv">0°</b><small>PITCH 垂直</small></div>
+        </div>
+        <div class="row" style="border:0;padding:12px 0 0">
+          <span class="ic" style="background:var(--blue-soft);color:var(--blue)"><svg viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7Z" fill="none"/></svg></span>
+          <span class="tx"><b>手势控制转头</b><small>抬手左右移动 → 小栈跟着你看</small></span>
+          <div class="switch" id="gsw" onclick="toggleG(this)"></div>
+        </div>
+        <div class="gesture-zone" id="gzone" style="margin-top:12px">
+          <div class="gz-hand" id="ghand"></div>
+          <div class="gz-in"><div class="dot"></div><b id="gtitle">手势感应区</b><small id="gsub">开启后在此区域移动手指模拟手部位置<br>正式版由 MediaPipe 手部关键点驱动</small></div>
+        </div>
+      </article>
+
+      <div class="sec">
+        <p class="sec-title">表情</p>
+        <div class="emotions" id="emos"></div>
+      </div>
+
+      <div class="sec">
+        <p class="sec-title">氛围灯 · 12 灯</p>
+        <div class="colors" id="colors"></div>
+      </div>
+
+      <div class="sec">
+        <p class="sec-title">动作</p>
+        <div class="quick">
+          <button class="qa" onclick="act('回正')"><span class="qi"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>回正</button>
+          <button class="qa" onclick="act('点头')"><span class="qi"><svg viewBox="0 0 24 24"><path d="M5 12h14M9 8l3 4 3-4M9 16l3-4 3 4" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg></span>点头</button>
+          <button class="qa" onclick="act('看着我')"><span class="qi"><svg viewBox="0 0 24 24"><path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6-10-6-10-6Z"/><circle cx="12" cy="12" r="2.6"/></svg></span>看着我</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 动作 ============ -->
+    <section class="screen" id="s-motion">
+      <div class="topbar">
+        <div><p class="eyebrow">编舞与动作库</p><h1>动作</h1></div>
+        <span class="pill warn">待录制</span>
+      </div>
+      <div class="sec" style="margin-top:4px">
+        <p class="sec-title">动作库</p>
+        <div class="motionlist" id="mo"></div>
+      </div>
+      <div class="sec">
+        <p class="sec-title">编舞</p>
+        <div class="card">
+          <p class="lede" style="margin-bottom:12px">录一段头部与表情的关键帧，循环播放。</p>
+          <button class="talk" id="recbtn" onclick="rec(this)">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6" fill="none" stroke="currentColor" stroke-width="2.2"/></svg>
+            <span id="reclabel">开始录制</span>
+          </button>
+          <div id="track" style="margin-top:12px;display:grid;gap:7px"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 设置 ============ -->
+    <section class="screen" id="s-settings">
+      <div class="topbar"><div><p class="eyebrow">像 iOS 设置一样</p><h1>设置</h1></div></div>
+
+      <p class="sec-title">设备</p>
+      <div class="list" id="grp-device"></div>
+
+      <div class="sec">
+        <p class="sec-title">人格</p>
+        <div class="list" id="grp-persona"></div>
+        <p class="groupfoot">人格参数来自 personas/enfp.json —— 通用人格包开源，你的私人数据在 private/ 里，永不入库。</p>
+      </div>
+
+      <div class="sec">
+        <p class="sec-title">交互</p>
+        <div class="list" id="grp-interact"></div>
+      </div>
+
+      <div class="sec">
+        <p class="sec-title">隐私与数据</p>
+        <div class="list" id="grp-privacy"></div>
+      </div>
+
+      <div class="sec">
+        <p class="sec-title">关于</p>
+        <div class="list" id="grp-about"></div>
+        <p class="groupfoot">小栈 · StackChan Companion · v0.1 原型</p>
+      </div>
+    </section>
+
+    <!-- ============ 子页：它眼中的你 ============ -->
+    <section class="screen" id="s-you" style="background:var(--canvas)">
+      <button class="backbar" onclick="back()"><svg viewBox="0 0 10 16"><path d="M9 1 2 8l7 7"/></svg>对话</button>
+      <div class="topbar"><div><p class="eyebrow">小栈的理解</p><h1>它眼中的你</h1></div></div>
+      <div class="card">
+        <p class="sec-title" style="margin-top:0">最近状态</p>
+        <div class="row" style="padding-left:0;padding-right:0"><span class="tx"><b>有点累，但有劲儿</b><small>连续 3 天提到"方案""加班"</small></span></div>
+        <div class="row" style="padding-left:0;padding-right:0"><span class="tx"><b>需要被具体地肯定</b><small>空泛的夸对你没用</small></span></div>
+        <div class="row" style="padding-left:0;padding-right:0;border:0"><span class="tx"><b>讨厌被说教</b><small>先共情，再说建议，且只说一条</small></span></div>
+      </div>
+      <div class="sec">
+        <p class="sec-title">它记住的</p>
+        <div class="list">
+          <div class="row"><span class="tx"><b>在做</b><small>一个差点放弃的方案</small></span></div>
+          <div class="row"><span class="tx"><b>不喜欢</b><small>被催、被说"你应该"</small></span></div>
+          <div class="row"><span class="tx"><b>喜欢</b><small>具体到某件事的认可、深夜有人陪着</small></span></div>
+          <div class="row"><span class="tx"><b>说过</b><small>"我还在坚持"</small></span></div>
+        </div>
+      </div>
+      <div class="sec">
+        <p class="sec-title">共同回忆</p>
+        <div class="list">
+          <div class="row"><span class="tx"><b>认识 47 天</b><small>第 12 天你第一次摸我的头</small></span></div>
+          <div class="row"><span class="tx"><b>一起看过 6 场电影</b><small>都是你推荐的</small></span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 子页：设置详情 ============ -->
+    <section class="screen" id="s-detail" style="background:var(--canvas)">
+      <button class="backbar" onclick="back()"><svg viewBox="0 0 10 16"><path d="M9 1 2 8l7 7"/></svg>设置</button>
+      <div class="topbar"><div><h1 id="dtitle" style="font-size:26px">详情</h1></div></div>
+      <div id="dbody"></div>
+    </section>
+
+  </div>
+
+  <nav class="tabbar" id="tabbar">
+    <button class="tab on" data-s="home"><svg viewBox="0 0 24 24"><path d="m4 10 8-6 8 6v9H4Z"/><path d="M9 19v-6h6v6"/></svg>陪伴</button>
+    <button class="tab" data-s="chat"><svg viewBox="0 0 24 24"><path d="M20 15a3 3 0 0 1-3 3H8l-4 4V6a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3Z"/></svg>对话</button>
+    <button class="tab" data-s="remote"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.5"/><path d="M12 4v5.5M12 14.5V20M4 12h5.5M14.5 12H20"/></svg>遥控</button>
+    <button class="tab" data-s="motion"><svg viewBox="0 0 24 24"><path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></svg>动作</button>
+    <button class="tab" data-s="settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1a1.7 1.7 0 0 0 1.9.3A1.7 1.7 0 0 0 10 3V2.8h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9A1.7 1.7 0 0 0 21 10h.2v4H21a1.7 1.7 0 0 0-1.6 1Z"/></svg>设置</button>
+  </nav>
+</div>
+
+<script>
+/* ---------------- 基础 ---------------- */
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+function buzz(ms){ try{ navigator.vibrate && navigator.vibrate(ms); }catch(e){} }
+function toast(t){ buzz(8); const n=$('#notebody'); n.textContent=t; }
+
+function tickClock(){ const d=new Date(); const h=d.getHours();
+  $('#greet').textContent = (h<6?'夜深了':h<11?'早上好':h<14?'中午好':h<18?'下午好':'晚上好')+`，${d.getMonth()+1}月${d.getDate()}日`; }
+tickClock(); setInterval(tickClock,30000);
+
+/* ---------------- 路由 ---------------- */
+let stack=[];
+function show(name){
+  const el=$('#s-'+name); if(!el) return;
+  $$('.screen').forEach(s=>s.classList.remove('active','back'));
+  el.classList.add('active');
+  $$('.tab').forEach(t=>t.classList.toggle('on', t.dataset.s===name));
+  const v=$('#viewport'); v.scrollTop=0;
+}
+function go(name){ stack.push(name); show(name); }
+function back(){ const p=stack.pop()||'settings'; show(p); }
+$$('.tab').forEach(t=>t.onclick=()=>{ stack=[]; show(t.dataset.s); buzz(6); });
+
+/* ---------------- 陪伴 ---------------- */
+const FACES=['••','^^','◕‿◕','>ᴗ<','≧▽≦','╹◔‿◔╹'];
+let faceIdx=0;
+function setFace(i, label){
+  faceIdx=i; $('#face').textContent=FACES[i%FACES.length];
+  if(label) $('#moodtxt').textContent=label;
+  const d=$('#device'); d.classList.add('turn'); setTimeout(()=>d.classList.remove('turn'),260);
+}
+function act(name){
+  buzz(12);
+  const map={'看着我':[1,'看着你'],'拍张照':[4,'拍照中'],'播音乐':[2,'放音乐'],'回正':[0,'回正了'],'点头':[3,'点头']};
+  const m=map[name];
+  if(m){ setFace(m[0], m[1]); $('#act').textContent = name==='看着我'?'我看着你呢。':'好，'+name+'。'; $('#say').textContent = name; }
+  toast('小栈：'+name+'，收到。');
+}
+let rec=false;
+function holdVoice(btn){
+  rec=!rec; buzz(rec?18:8);
+  btn.classList.toggle('rec',rec);
+  $('#talklabel').textContent = rec?'松开发送':'按住和小栈说话';
+  if(rec){ $('#say').textContent='我在听…'; setFace(1,'听你说'); }
+  else { setFace(0,'陪伴中'); $('#say').textContent='收到啦'; toast('小栈：收到啦，我记下了。'); }
+}
+
+/* ---------------- 对话 ---------------- */
+function send(){
+  const i=$('#msg'); const t=i.value.trim(); if(!t) return;
+  const b=$('#bubbles');
+  const now=new Date().toTimeString().slice(0,5);
+  b.insertAdjacentHTML('beforeend',`<div class="b me">${esc(t)}<span class="stamp">${now}</span></div>`);
+  i.value=''; buzz(8); b.scrollTop=b.scrollHeight;
+  setTimeout(()=>{
+    b.insertAdjacentHTML('beforeend',`<div class="b it">${reply(t)}<span class="stamp">${now}</span></div>`);
+    b.scrollTop=b.scrollHeight; buzz([10,60,14]);
+    setFace(3,'回你');
+  },700);
+}
+function esc(s){ return s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+function reply(t){
+  if(/累|困|难|emo|不开心|压力/.test(t)) return '那就先别硬撑了。你今天已经够努力的了。';
+  if(/开心|太好了|成了|搞定|哈哈/.test(t)) return '我就知道！这一关你过了。';
+  if(/怎么办|建议|应该/.test(t)) return '嗯…我先不给你建议，你更想吐槽一下，还是一起想办法？';
+  return '嗯，我在听。';
+}
+
+/* ---------------- 遥控：舵机 ---------------- */
+const joy=$('#joy'), knob=$('#knob');
+let yaw=0,pitch=0;
+function setJoy(cx,cy,rect){
+  const r=rect.width/2-33;
+  let dx=cx-(rect.left+rect.width/2), dy=cy-(rect.top+rect.height/2);
+  const d=Math.hypot(dx,dy); if(d>r){ dx=dx/d*r; dy=dy/d*r; }
+  knob.style.transform=`translate(${dx}px,${dy}px)`;
+  yaw=Math.round(dx/r*128); pitch=Math.round(-dy/r*90);
+  $('#yawv').textContent=(yaw>0?'+':'')+yaw+'°';
+  $('#pitchv').textContent=(pitch>0?'+':'')+pitch+'°';
+}
+let joyOn=false;
+joy.addEventListener('pointerdown',e=>{joyOn=true;joy.setPointerCapture(e.pointerId);setJoy(e.clientX,e.clientY,joy.getBoundingClientRect());buzz(10);});
+joy.addEventListener('pointermove',e=>{if(joyOn)setJoy(e.clientX,e.clientY,joy.getBoundingClientRect());});
+joy.addEventListener('pointerup',e=>{joyOn=false;knob.style.transform='translate(0,0)';yaw=0;pitch=0;$('#yawv').textContent='0°';$('#pitchv').textContent='0°';buzz(6);});
+
+/* ---------------- 遥控：手势 ---------------- */
+let gOn=false;
+function toggleG(el){ gOn=!gOn; el.classList.toggle('on',gOn); buzz(12);
+  $('#gtitle').textContent = gOn?'手势控制中':'手势感应区';
+  $('#gsub').innerHTML = gOn?'移动手指，小栈跟着看<br><span class="badge">MediaPipe HandLandmarker</span>':'开启后在此区域移动手指模拟手部位置<br>正式版由 MediaPipe 手部关键点驱动';
+  if(!gOn){ $('#ghand').style.display='none'; yaw=0;pitch=0;$('#yawv').textContent='0°';$('#pitchv').textContent='0°';knob.style.transform='translate(0,0)'; }
+}
+const gz=$('#gzone');
+let gOn2=false;
+gz.addEventListener('pointerdown',e=>{ if(!gOn)return; gOn2=true; gz.setPointerCapture(e.pointerId); moveG(e); });
+gz.addEventListener('pointermove',e=>{ if(gOn2) moveG(e); });
+gz.addEventListener('pointerup',()=>{ gOn2=false; $('#ghand').style.display='none'; yaw=0;pitch=0;$('#yawv').textContent='0°';$('#pitchv').textContent='0°';knob.style.transform='translate(0,0)'; });
+function moveG(e){
+  const r=gz.getBoundingClientRect();
+  const h=$('#ghand'); h.style.display='block';
+  h.style.left=(e.clientX-r.left-21)+'px'; h.style.top=(e.clientY-r.top-21)+'px';
+  const nx=(e.clientX-r.left)/r.width*2-1, ny=(e.clientY-r.top)/r.height*2-1;
+  yaw=Math.round(nx*128); pitch=Math.round(-ny*90);
+  $('#yawv').textContent=(yaw>0?'+':'')+yaw+'°';
+  $('#pitchv').textContent=(pitch>0?'+':'')+pitch+'°';
+  knob.style.transform=`translate(${nx*85}px,${ny*85}px)`;
+  setFace(nx<-0.4?1:nx>0.4?2:0, nx<-0.4?'看你左边':nx>0.4?'看你右边':'看着你');
+  buzz(4);
+}
+
+/* ---------------- 表情 / 灯 ---------------- */
+const EMOS=[['开心','◕‿◕'],['温柔','◡‿◡'],['惊讶','⊙‿⊙'],['思考','•‿•'],['害羞','^‿^'],['生气','>‿<'],['困','-‿-'],['心动','♥‿♥']];
+$('#emos').innerHTML=EMOS.map((e,i)=>`<button class="emo${i===0?' on':''}" onclick="pickEmo(this,'${e[0]}')"><span class="ef">${e[1]}</span>${e[0]}</button>`).join('');
+function pickEmo(el,label){ $$('.emo').forEach(x=>x.classList.remove('on')); el.classList.add('on');
+  buzz(10); setFace(EMOS.findIndex(e=>e[0]===label), label); toast('小栈的表情切成了「'+label+'」'); }
+const COLORS=['#c76a31','#df776b','#e8a33d','#3fa77d','#4d7fe8','#8e6bd4','#e05c8a','#f2ede4'];
+$('#colors').innerHTML=COLORS.map((c,i)=>`<button class="sw${i===0?' on':''}" style="background:${c}" onclick="pickC(this)"></button>`).join('');
+function pickC(el){ $$('.sw').forEach(x=>x.classList.remove('on')); el.classList.add('on'); buzz(10); toast('氛围灯已切换'); }
+
+/* ---------------- 动作 ---------------- */
+const MO=[['点头','〰','互动'],['摇头','≋','互动'],['招手','✋','互动'],['看别处','👀','互动'],['回正','⌖','互动'],['爱心','♥','情绪'],['跳跃','⤴','情绪'],['害羞','◔‿◔','情绪'],['困倦','-‿-','情绪'],['惊讶','⊙','情绪'],['思考','⁇','情绪'],['倾听','👂','互动']];
+$('#mo').innerHTML=MO.map(m=>`<button class="mo" onclick="act('${m[0]}')"><span class="mf">${m[1]}</span><b>${m[0]}</b><small>${m[2]}</small></button>`).join('');
+let recording=false, track=[];
+function rec(btn){
+  recording=!recording; buzz(recording?20:8);
+  btn.classList.toggle('rec',recording); btn.style.background = recording? '#c0392b':'';
+  $('#reclabel').textContent = recording?'停止录制':'开始录制';
+  if(!recording){ renderTrack(); }
+}
+function renderTrack(){
+  if(!track.length){ $('#track').innerHTML='<p class="hint">还没有关键帧。录制时会记下转头角度与表情切换。</p>'; return; }
+  $('#track').innerHTML = track.map((k,i)=>`<div class="row" style="border:0;padding:6px 0"><span class="tx"><b>关键帧 ${i+1}</b><small>yaw ${k.y}° · pitch ${k.p}° · ${k.e}</small></span></div>`).join('');
+}
+renderTrack();
+setInterval(()=>{ if(recording && (Math.abs(yaw)>8||Math.abs(pitch)>8)){ track.push({y:yaw,p:pitch,e:'专注'}); renderTrack(); } },1200);
+
+/* ---------------- 设置 ---------------- */
+const IC={device:'<svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M9 10h.01M15 10h.01M9 15c1.5 1 4.5 1 6 0"/></svg>'};
+function mkIcon(bg,svg){return `<span class="si" style="background:${bg}">${svg}</span>`}
+const S=(p)=>'<svg viewBox="0 0 24 24"><path d="'+p+'"/></svg>';
+const GROUPS={
+ device:[
+  ['设备名称','小栈','#8e6bd4','<circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/>','detail-name'],
+  ['Wi-Fi','Huas-Student','#4d7fe8','<path d="M4 9a12 12 0 0 1 16 0M7 13a8 8 0 0 1 10 0M10 17a4 4 0 0 1 4 0"/>','detail-wifi'],
+  ['固件更新','v1.5.1 · 有新版本','#c76a31','<path d="M12 3v12M8 11l4 4 4-4M5 21h14"/>','detail-fw'],
+  ['电量','86%','#3fa77d','<rect x="3" y="7" width="17" height="10" rx="3"/><path d="M21 11v2"/>','detail-batt'],
+ ],
+ persona:[
+  ['称呼','小栈','#df776b','<path d="M12 20s-7-4.4-7-9a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 4.6-7 9-7 9Z"/>','detail-name2'],
+  ['性格','ENFP · 热情好奇','#e8a33d','<path d="M12 3l2.4 5.6L20 9.5l-4 4 1 6-5-3-5 3 1-6-4-4 5.6-.9Z"/>','detail-persona'],
+  ['主动程度','高 · 每天最多 6 次','#4d7fe8','<path d="M12 21V9M12 9 8 5M12 9l4-4"/>','detail-init'],
+  ['边界','23:00–08:00 静音','#8e6bd4','<path d="M12 3v18M3 12h18"/>','detail-bound'],
+ ],
+ interact:[
+  ['触感','已开启','#df776b','<path d="M8 5v14M16 5v14M5 8v8M19 8v8"/>','detail-haptic'],
+  ['语音','小栈的声音','#3fa77d','<path d="M12 15a3 3 0 0 0 3-3V7a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3Z"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>','detail-voice'],
+  ['表情','官方表情','#e8a33d','<circle cx="12" cy="12" r="8"/><path d="M9 10h.01M15 10h.01M9 15c1.5 1 4.5 1 6 0"/>','detail-face'],
+  ['音量','70%','#4d7fe8','<path d="M5 9v6h4l5 4V5L9 9Z"/>','detail-vol'],
+ ],
+ privacy:[
+  ['相机权限','仅手势控制时使用','#8e6bd4','<path d="M4 8.5h3l1.4-2h7.2l1.4 2h3v10H4Z"/><circle cx="12" cy="13.2" r="3.2"/>','detail-cam'],
+  ['记忆','142 条 · 可编辑','#3fa77d','<path d="M9 3h6l1 3h4v14H4V6h4Z"/><path d="M9 11h6M9 15h4"/>','detail-mem'],
+  ['数据导出','JSON / 图片 / 日志','#4d7fe8','<path d="M12 3v12M8 11l4 4 4-4M5 21h14"/>','detail-export'],
+ ],
+ about:[
+  ['关于小栈','v0.1','#857a71','<circle cx="12" cy="12" r="8"/><path d="M12 11v5M12 8h.01"/>','detail-about'],
+  ['开源仓库','GitHub','#251f1b','<path d="M9 19c-4 1.3-4-2-6-2m12 5v-3.9c0-1.1.3-1.9 1-2.5-3-.3-6-1.5-6-6.5a5 5 0 0 1 1.4-3.5 4.6 4.6 0 0 1 .1-3.5s1.1-.4 3.5 1.3a12 12 0 0 1 6 0C22 3.9 23 4.3 23 4.3a4.6 4.6 0 0 1 .1 3.5A5 5 0 0 1 24.5 11c0 5-3 6.2-6 6.5"/>','detail-gh'],
+ ]
+};
+function renderGroup(id,key){
+  $('#'+id).innerHTML=GROUPS[key].map(r=>
+    `<button class="srow" onclick="detail('${r[0]}','${r[5]}')">${mkIcon(r[2],r[3])}<span class="st">${r[0]}</span><span class="sv">${r[1]}</span><span class="chev">›</span></button>`).join('');
+}
+renderGroup('grp-device','device'); renderGroup('grp-persona','persona');
+renderGroup('grp-interact','interact'); renderGroup('grp-privacy','privacy'); renderGroup('grp-about','about');
+
+const DETAILS={
+ 'detail-name':['设备名称','它会这样介绍自己。<div class="card"><input id="nm" value="小栈" style="width:100%;height:46px;border:1px solid var(--line);border-radius:13px;padding:0 14px;background:var(--surface);outline:none;font-size:16px"></div><p class="hint">改名后它会立刻改口。</p>'],
+ 'detail-name2':['称呼','怎么称呼你。<div class="card"><input value="蒋磊" style="width:100%;height:46px;border:1px solid var(--line);border-radius:13px;padding:0 14px;background:var(--surface);outline:none;font-size:16px"></div>'],
+ 'detail-wifi':['Wi-Fi','<div class="list"><div class="row"><span class="tx"><b>Huas-Student</b><small>已连接 · 信号良好</small></span><span class="val">当前</span></div><div class="row"><span class="tx"><b>iPhone 热点</b><small>信号良好</small></span><span class="chev">›</span></div><div class="row"><span class="tx"><b>Mate80</b><small>仅 5GHz，设备不支持</small></span><span class="val">不可用</span></div></div>'],
+ 'detail-fw':['固件更新','<div class="card"><p class="lede" style="margin-bottom:12px">当前 v1.5.1（官方）· 我们的 StackChan3 构建可用</p><button class="talk" onclick="toast(\'开始检查更新…\')"><span>检查更新</span></button></div><p class="hint">签名校验 + 双分区回滚。</p>'],
+ 'detail-batt':['电量','<div class="card"><p class="lede">86% · 预计还能用 6 小时左右</p></div><p class="hint">低于 20% 会主动提醒你充电。</p>'],
+ 'detail-persona':['性格 · ENFP','<div class="card"><p class="sec-title" style="margin-top:0">来自 personas/enfp.json</p><div class="row" style="padding-left:0;padding-right:0"><span class="tx"><b>具体化肯定</b><small>夸你必须带证据</small></span></div><div class="row" style="padding-left:0;padding-right:0"><span class="tx"><b>先共情再说建议</b><small>且最多一条建议</small></span></div><div class="row" style="padding-left:0;padding-right:0"><span class="tx"><b>情绪慢衰减</b><small>不急着翻篇</small></span></div><div class="row" style="padding-left:0;padding-right:0;border:0"><span class="tx"><b>沉默不尴尬</b><small>可以安静陪着</small></span></div></div><p class="hint">通用人格包开源；你的私人偏好写在 private/persona.local.json。</p>'],
+ 'detail-init':['主动程度','<div class="list"><div class="row"><span class="tx"><b>低</b><small>每天最多 2 次</small></span></div><div class="row"><span class="tx"><b>中</b><small>每天最多 4 次</small></span></div><div class="row"><span class="tx"><b>高</b><small>每天最多 6 次</small></span><span class="val">当前</span></div></div>'],
+ 'detail-bound':['边界','<div class="card"><p class="lede" style="margin-bottom:10px">静音时段</p><input value="23:00 – 08:00" style="width:100%;height:46px;border:1px solid var(--line);border-radius:13px;padding:0 14px;background:var(--surface);outline:none;font-size:16px"></div><p class="hint">专注时不打断。</p>'],
+ 'detail-haptic':['触感','<div class="card"><p class="sec-title" style="margin-top:0">触感签名</p><div class="row" style="padding-left:0;padding-right:0"><span class="tx"><b>收到消息</b><small>轻点两下</small></span><span class="badge">UIFeedback</span></div><div class="row" style="padding-left:0;padding-right:0"><span class="tx"><b>它开心</b><small>上升音阶</small></span><span class="badge">Core Haptics</span></div><div class="row" style="padding-left:0;padding-right:0"><span class="tx"><b>舵机动作</b><small>短促咔哒</small></span><span class="badge">Core Haptics</span></div><div class="row" style="padding-left:0;padding-right:0;border:0"><span class="tx"><b>它低落</b><small>轻拍两下</small></span><span class="badge">Core Haptics</span></div></div><p class="hint">正式版用 Core Haptics 自定义波形；本原型用系统振动模拟。</p>'],
+ 'detail-voice':['语音','<div class="card"><p class="lede">音色：小栈（MiniMax Speech 2.6 · 克隆自你选的声音）</p><button class="talk" onclick="toast(\'试听中…\')"><span>试听</span></button></div><p class="hint">音色由你定，这里不放任何未经确认的声音。</p>'],
+ 'detail-face':['表情','<div class="card"><p class="lede">使用官方表情资源。语义标签来自人格包，美术来自官方。</p></div>'],
+ 'detail-vol':['音量','<div class="card"><p class="lede">70%</p><input type="range" value="70" style="width:100%"></div>'],
+ 'detail-cam':['相机权限','<div class="card"><p class="lede">只在开启手势控制时访问相机。画面不上传服务器。</p></div><p class="hint">识别在手机本地完成（MediaPipe）。</p>'],
+ 'detail-mem':['记忆','<div class="list"><div class="row"><span class="tx"><b>在做</b><small>3 条</small></span></div><div class="row"><span class="tx"><b>不喜欢</b><small>5 条</small></span></div><div class="row"><span class="tx"><b>说过</b><small>24 条</small></span></div><div class="row"><span class="tx"><b>临时</b><small>110 条 · 7 天后自动清</small></span></div></div><p class="hint">每一条都可以单独删。</p>'],
+ 'detail-export':['数据导出','<div class="list"><div class="row"><span class="tx"><b>全部记忆</b><small>JSON</small></span><span class="chev">›</span></div><div class="row"><span class="tx"><b>照片与媒体</b><small>ZIP</small></span><span class="chev">›</span></div><div class="row"><span class="tx"><b>设备日志</b><small>TXT</small></span><span class="chev">›</span></div></div>'],
+ 'detail-about':['关于小栈','<div class="card"><p class="lede">StackChan Companion v0.1 · 原型</p><p class="lede" style="margin-top:8px">设备：M5Stack CoreS3（ESP32-S3）<br>大脑：MiniMax<br>协议：官方 /stackChan/ws</p></div>'],
+ 'detail-gh':['开源仓库','<div class="card"><p class="lede">core/ + personas/ 开源，private/ 不入库。</p></div><p class="hint">README、架构文档、ADR、CI 都会在。</p>']
+};
+function detail(title,key){
+  const d=DETAILS[key]; if(!d){ toast('待补充'); return; }
+  $('#dtitle').textContent=d[0]; $('#dbody').innerHTML=d[1];
+  stack.push('detail'); show('detail');
+}
+</script>
+</body>
+</html>

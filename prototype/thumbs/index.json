@@ -1,0 +1,162 @@
+[
+  {
+    "slug": "01-paper-terracotta",
+    "file": "01-paper-terracotta.html",
+    "bg": "rgb(116, 116, 122)",
+    "color": "rgb(30, 30, 34)",
+    "accent": "rgb(95, 95, 102)",
+    "jsError": ""
+  },
+  {
+    "slug": "02-graphite-mono",
+    "file": "02-graphite-mono.html",
+    "bg": "rgb(116, 116, 122)",
+    "color": "rgb(30, 30, 34)",
+    "accent": "rgb(95, 95, 102)",
+    "jsError": ""
+  },
+  {
+    "slug": "03-pure-white-blank",
+    "file": "03-pure-white-blank.html",
+    "bg": "rgb(237, 237, 240)",
+    "color": "rgb(29, 29, 31)",
+    "accent": "rgb(183, 67, 50)",
+    "jsError": ""
+  },
+  {
+    "slug": "04-stage-spotlight",
+    "file": "04-stage-spotlight.html",
+    "bg": "rgb(237, 237, 240)",
+    "color": "rgb(242, 242, 244)",
+    "accent": "rgb(95, 95, 102)",
+    "jsError": ""
+  },
+  {
+    "slug": "05-pet-cosy",
+    "file": "05-pet-cosy.html",
+    "bg": "rgb(237, 237, 240)",
+    "color": "rgb(46, 38, 36)",
+    "accent": "rgb(95, 95, 102)",
+    "jsError": ""
+  },
+  {
+    "slug": "06-ink-editorial",
+    "file": "06-ink-editorial.html",
+    "bg": "rgb(237, 237, 240)",
+    "color": "rgb(20, 20, 20)",
+    "accent": "rgb(95, 95, 102)",
+    "jsError": ""
+  },
+  {
+    "slug": "07-blueprint-tech",
+    "file": "07-blueprint-tech.html",
+    "bg": "rgb(237, 237, 240)",
+    "color": "rgb(230, 238, 245)",
+    "accent": "rgb(95, 95, 102)",
+    "jsError": ""
+  },
+  {
+    "slug": "08-warm-terminal",
+    "file": "08-warm-terminal.html",
+    "bg": "rgb(237, 237, 240)",
+    "color": "rgb(244, 233, 216)",
+    "accent": "rgb(95, 95, 102)",
+    "jsError": ""
+  },
+  {
+    "slug": "09-swiss-grid",
+    "file": "09-swiss-grid.html",
+    "bg": "rgb(237, 237, 240)",
+    "color": "rgb(0, 0, 0)",
+    "accent": "rgb(201, 47, 38)",
+    "jsError": ""
+  },
+  {
+    "slug": "10-dual-voice",
+    "file": "10-dual-voice.html",
+    "bg": "rgb(237, 237, 240)",
+    "color": "rgb(26, 29, 35)",
+    "accent": "rgb(95, 95, 102)",
+    "jsError": ""
+  },
+  {
+    "slug": "11-muted-sage",
+    "file": "11-muted-sage.html",
+    "bg": "rgb(237, 237, 240)",
+    "color": "rgb(34, 42, 38)",
+    "accent": "rgb(95, 95, 102)",
+    "jsError": ""
+  },
+  {
+    "slug": "12-noir-contrast",
+    "file": "12-noir-contrast.html",
+    "bg": "rgb(237, 237, 240)",
+    "color": "rgb(0, 0, 0)",
+    "accent": "rgb(95, 95, 102)",
+    "jsError": ""
+  },
+  {
+    "slug": "13-dim-surface",
+    "file": "13-dim-surface.html",
+    "bg": "rgb(237, 237, 240)",
+    "color": "rgb(237, 237, 240)",
+    "accent": "rgb(95, 95, 102)",
+    "jsError": ""
+  },
+  {
+    "slug": "14-coral-pop",
+    "file": "14-coral-pop.html",
+    "bg": "rgb(237, 237, 240)",
+    "color": "rgb(43, 31, 28)",
+    "accent": "rgb(95, 95, 102)",
+    "jsError": ""
+  },
+  {
+    "slug": "15-dot-matrix",
+    "file": "15-dot-matrix.html",
+    "bg": "rgb(237, 237, 240)",
+    "color": "rgb(220, 245, 231)",
+    "accent": "rgb(95, 95, 102)",
+    "jsError": ""
+  },
+  {
+    "slug": "16-paper-editorial-warm",
+    "file": "16-paper-editorial-warm.html",
+    "bg": "rgb(237, 237, 240)",
+    "color": "rgb(40, 33, 27)",
+    "accent": "rgb(156, 74, 50)",
+    "jsError": ""
+  },
+  {
+    "slug": "17-warm-paper-serif",
+    "file": "17-warm-paper-serif.html",
+    "bg": "rgb(237, 237, 240)",
+    "color": "rgb(42, 35, 28)",
+    "accent": "rgb(158, 59, 38)",
+    "jsError": ""
+  },
+  {
+    "slug": "18-tuck-dark-calm",
+    "file": "18-tuck-dark-calm.html",
+    "bg": "rgb(237, 237, 240)",
+    "color": "rgb(236, 236, 238)",
+    "accent": "rgb(95, 95, 102)",
+    "jsError": ""
+  },
+  {
+    "slug": "19-swiss-editorial",
+    "file": "19-swiss-editorial.html",
+    "bg": "rgb(237, 237, 240)",
+    "color": "rgb(0, 0, 0)",
+    "accent": "rgb(216, 6, 0)",
+    "jsError": ""
+  },
+  {
+    "slug": "20-mint-terminal",
+    "file": "20-mint-terminal.html",
+    "bg": "rgb(237, 237, 240)",
+    "color": "rgb(166, 239, 200)",
+    "accent": "rgb(95, 95, 102)",
+    "jsError": ""
+  }
+]

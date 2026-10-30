@@ -1,0 +1,77 @@
+# =============================================================================
+# 引用登记表 —— 「文献留痕池之外」被引用的 arXiv / DOI
+#
+# ⭐ 为什么需要它：门禁 `check_citations` 要求**每个被引用的标识都必须能溯源**。
+#    溯源池 = docs/research 下 8 份**文献留痕快照**（含 `**主题键**：` 标记）。
+#    49/51/54/55/37 号等**早期直接检索**得到的引用不在留痕快照里 ⇒ 用本表登记。
+#
+# ⭐ URL 是**规范可推导**的（arXiv ID → https://arxiv.org/abs/<id>），
+#    **不是**从文档里「就近抓链接」—— 实测就近抓会把 A 论文的 ID 配上 B 论文的链接。
+#
+# 格式：<标识>\t<规范 URL>\t<状态>\t<引用它的文档>
+#   状态：verified=已用 arXiv API 校验存在 ｜ unverified=未取得/无法校验（如实标注）
+# =============================================================================
+1511.04143	https://arxiv.org/abs/1511.04143	verified	docs/research/55-关键帧插值与韵律舵机映射方案.md
+1607.05327	https://arxiv.org/abs/1607.05327	verified	docs/research/55-关键帧插值与韵律舵机映射方案.md
+1707.01696	https://arxiv.org/abs/1707.01696	verified	docs/research/55-关键帧插值与韵律舵机映射方案.md
+1803.09010	https://arxiv.org/abs/1803.09010	verified	docs/research/55-关键帧插值与韵律舵机映射方案.md
+1811.10758	https://arxiv.org/abs/1811.10758	verified	docs/research/49-端侧感知与开源硬件生态扫描.md
+1905.00495	https://arxiv.org/abs/1905.00495	verified	docs/research/55-关键帧插值与韵律舵机映射方案.md
+1906.09013	https://arxiv.org/abs/1906.09013	verified	docs/research/55-关键帧插值与韵律舵机映射方案.md
+2001.05863	https://arxiv.org/abs/2001.05863	verified	docs/research/49-端侧感知与开源硬件生态扫描.md
+2002.01869	https://arxiv.org/abs/2002.01869	verified	docs/research/55-关键帧插值与韵律舵机映射方案.md
+2008.07643	https://arxiv.org/abs/2008.07643	verified	docs/research/49-端侧感知与开源硬件生态扫描.md
+2009.02846	https://arxiv.org/abs/2009.02846	verified	docs/research/55-关键帧插值与韵律舵机映射方案.md
+2009.09048	https://arxiv.org/abs/2009.09048	verified	docs/research/49-端侧感知与开源硬件生态扫描.md
+2011.08232	https://arxiv.org/abs/2011.08232	verified	docs/research/55-关键帧插值与韵律舵机映射方案.md
+2102.08322	https://arxiv.org/abs/2102.08322	verified	docs/research/51-陪伴产品冷启动案例与首周档案方案.md
+2102.11564	https://arxiv.org/abs/2102.11564	verified	docs/research/55-关键帧插值与韵律舵机映射方案.md
+2105.12724	https://arxiv.org/abs/2105.12724	verified	docs/research/55-关键帧插值与韵律舵机映射方案.md
+2109.01206	https://arxiv.org/abs/2109.01206	verified	docs/research/55-关键帧插值与韵律舵机映射方案.md
+2110.04527	https://arxiv.org/abs/2110.04527	verified	docs/research/49-端侧感知与开源硬件生态扫描.md
+2201.09975	https://arxiv.org/abs/2201.09975	verified	docs/research/55-关键帧插值与韵律舵机映射方案.md
+2201.11167	https://arxiv.org/abs/2201.11167	verified	docs/research/55-关键帧插值与韵律舵机映射方案.md
+2212.04420	https://arxiv.org/abs/2212.04420	verified	docs/research/37-程序化动作合成与物理具身技术栈调研.md
+2305.13626	https://arxiv.org/abs/2305.13626	verified	docs/research/51-陪伴产品冷启动案例与首周档案方案.md
+2309.05127	https://arxiv.org/abs/2309.05127	verified	docs/research/51-陪伴产品冷启动案例与首周档案方案.md
+2402.01324	https://arxiv.org/abs/2402.01324	verified	docs/research/55-关键帧插值与韵律舵机映射方案.md
+2403.08144	https://arxiv.org/abs/2403.08144	verified	docs/research/55-关键帧插值与韵律舵机映射方案.md
+2405.20189	https://arxiv.org/abs/2405.20189	verified	docs/research/49-端侧感知与开源硬件生态扫描.md
+2406.05925	https://arxiv.org/abs/2406.05925	verified	docs/research/51-陪伴产品冷启动案例与首周档案方案.md
+2501.09921	https://arxiv.org/abs/2501.09921	verified	docs/research/49-端侧感知与开源硬件生态扫描.md
+2504.12867	https://arxiv.org/abs/2504.12867	verified	docs/research/54-韵律特征提取与端侧实时可行性.md
+2505.11649	https://arxiv.org/abs/2505.11649	verified	docs/research/51-陪伴产品冷启动案例与首周档案方案.md
+2505.12334	https://arxiv.org/abs/2505.12334	verified	docs/research/51-陪伴产品冷启动案例与首周档案方案.md
+2505.15456	https://arxiv.org/abs/2505.15456	verified	docs/research/51-陪伴产品冷启动案例与首周档案方案.md
+2506.03359	https://arxiv.org/abs/2506.03359	verified	docs/research/54-韵律特征提取与端侧实时可行性.md
+2506.10010	https://arxiv.org/abs/2506.10010	verified	docs/research/49-端侧感知与开源硬件生态扫描.md, docs/research/55-关键帧插值与韵律舵机映射方案.md
+2507.15783	https://arxiv.org/abs/2507.15783	verified	docs/research/51-陪伴产品冷启动案例与首周档案方案.md, docs/spec/04-产品战略与护城河总纲.md
+2508.20973	https://arxiv.org/abs/2508.20973	verified	docs/research/51-陪伴产品冷启动案例与首周档案方案.md
+2509.12507	https://arxiv.org/abs/2509.12507	verified	docs/research/49-端侧感知与开源硬件生态扫描.md
+2509.17466	https://arxiv.org/abs/2509.17466	verified	docs/research/51-陪伴产品冷启动案例与首周档案方案.md
+2509.19515	https://arxiv.org/abs/2509.19515	verified	docs/research/51-陪伴产品冷启动案例与首周档案方案.md
+2509.22505	https://arxiv.org/abs/2509.22505	verified	docs/research/51-陪伴产品冷启动案例与首周档案方案.md, docs/spec/04-产品战略与护城河总纲.md
+2510.12834	https://arxiv.org/abs/2510.12834	verified	docs/research/49-端侧感知与开源硬件生态扫描.md, docs/research/54-韵律特征提取与端侧实时可行性.md
+2511.00402	https://arxiv.org/abs/2511.00402	verified	docs/research/54-韵律特征提取与端侧实时可行性.md
+2512.14234	https://arxiv.org/abs/2512.14234	verified	docs/research/49-端侧感知与开源硬件生态扫描.md
+2512.15302	https://arxiv.org/abs/2512.15302	verified	docs/research/51-陪伴产品冷启动案例与首周档案方案.md
+2512.17183	https://arxiv.org/abs/2512.17183	verified	docs/research/55-关键帧插值与韵律舵机映射方案.md
+2512.19551	https://arxiv.org/abs/2512.19551	verified	docs/research/55-关键帧插值与韵律舵机映射方案.md
+2601.17287	https://arxiv.org/abs/2601.17287	verified	docs/research/49-端侧感知与开源硬件生态扫描.md, docs/research/54-韵律特征提取与端侧实时可行性.md
+2601.18451	https://arxiv.org/abs/2601.18451	verified	docs/research/55-关键帧插值与韵律舵机映射方案.md
+2603.03282	https://arxiv.org/abs/2603.03282	verified	docs/research/49-端侧感知与开源硬件生态扫描.md
+2603.09324	https://arxiv.org/abs/2603.09324	verified	docs/research/49-端侧感知与开源硬件生态扫描.md, docs/research/55-关键帧插值与韵律舵机映射方案.md
+2603.19831	https://arxiv.org/abs/2603.19831	verified	docs/research/49-端侧感知与开源硬件生态扫描.md
+2603.20200	https://arxiv.org/abs/2603.20200	verified	docs/research/49-端侧感知与开源硬件生态扫描.md
+2604.18375	https://arxiv.org/abs/2604.18375	verified	docs/research/51-陪伴产品冷启动案例与首周档案方案.md, docs/spec/04-产品战略与护城河总纲.md
+2605.26236	https://arxiv.org/abs/2605.26236	verified	docs/research/49-端侧感知与开源硬件生态扫描.md, docs/research/54-韵律特征提取与端侧实时可行性.md
+2606.03359	https://arxiv.org/abs/2606.03359	verified	docs/research/54-韵律特征提取与端侧实时可行性.md
+2606.18747	https://arxiv.org/abs/2606.18747	verified	docs/research/55-关键帧插值与韵律舵机映射方案.md
+2607.23840	https://arxiv.org/abs/2607.23840	verified	docs/research/49-端侧感知与开源硬件生态扫描.md
+2607.25289	https://arxiv.org/abs/2607.25289	verified	docs/research/54-韵律特征提取与端侧实时可行性.md
+2608.06408	https://arxiv.org/abs/2608.06408	verified	docs/research/49-端侧感知与开源硬件生态扫描.md
+2609.21576	https://arxiv.org/abs/2609.21576	verified	docs/research/49-端侧感知与开源硬件生态扫描.md
+2609.36685	https://arxiv.org/abs/2609.36685	verified	docs/research/49-端侧感知与开源硬件生态扫描.md, docs/research/54-韵律特征提取与端侧实时可行性.md
+2609.39575	https://arxiv.org/abs/2609.39575	verified	docs/research/54-韵律特征提取与端侧实时可行性.md
+
+# 合计 62 条（arXiv 62：verified 62 / unverified 0 ｜ DOI 0）

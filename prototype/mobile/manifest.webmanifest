@@ -1,0 +1,16 @@
+{
+  "name": "小栈",
+  "short_name": "小栈",
+  "description": "小栈陪伴机器人手机控制应用",
+  "lang": "zh-CN",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b0e13",
+  "theme_color": "#0e1117",
+  "icons": [
+    { "src": "./assets/app-icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "./assets/app-icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

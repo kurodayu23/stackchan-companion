@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#121316">
+<title>小栈 · 遥控台</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body data-mode="demo">
+
+  <!-- 顶部状态条：连接状态是唯一的信息入口，不打扰 -->
+  <header class="status-bar" id="statusBar">
+    <span class="status-dot" aria-hidden="true"></span>
+    <span id="statusText">正在连接…</span>
+    <span class="status-sep" aria-hidden="true">·</span>
+    <span id="deviceName" class="status-name">小栈</span>
+    <span class="status-spacer" aria-hidden="true"></span>
+    <span class="mode-chip" id="modeChip">演示</span>
+  </header>
+
+  <!-- 3D 舞台：唯一主角 -->
+  <main class="stage-wrap">
+    <section class="robot-stage" id="robotStage" aria-label="小栈 3D 姿态预览">
+      <canvas id="robotPreviewCanvas" class="robot-preview-canvas" tabindex="0"
+        aria-label="小栈全身 3D 模型，实时跟随摇杆" data-yaw="0" data-pitch="45"></canvas>
+      <span id="robotPreviewFallback" class="robot-preview-fallback" role="status" aria-live="polite">正在加载 3D 模型…</span>
+      <span class="stage-chip" id="stageChip">● 居中</span>
+    </section>
+
+    <section class="pose-readout" aria-live="polite">
+      <span>左右 <b id="poseYaw">0°</b></span>
+      <span class="readout-sep" aria-hidden="true"></span>
+      <span>俯仰 <b id="posePitch">45°</b></span>
+    </section>
+
+    <!-- 速度档：不出现数字与滑块，4 个圆点就是全部 -->
+    <section class="speed-row" aria-label="转动速度">
+      <span class="speed-label">速度</span>
+      <div class="speed-dots">
+        <button class="speed-dot" type="button" data-speed-level="0" aria-label="安静" aria-pressed="false"></button>
+        <button class="speed-dot" type="button" data-speed-level="1" aria-label="轻柔" aria-pressed="false"></button>
+        <button class="speed-dot is-active" type="button" data-speed-level="2" aria-label="自然" aria-pressed="true"></button>
+        <button class="speed-dot" type="button" data-speed-level="3" aria-label="活泼" aria-pressed="false"></button>
+      </div>
+      <span class="speed-value" id="speedValue">自然</span>
+    </section>
+  </main>
+
+  <!-- 摇杆：半透明环形，拇指可达域，球心带瞳孔 -->
+  <section class="control-dock" aria-label="头部控制">
+    <button class="pose-action" id="centerHead" type="button" aria-label="回正">回正</button>
+    <div class="joystick-box">
+      <div class="joystick-pad" id="joystick" role="slider" tabindex="0"
+        aria-label="头部方向" aria-valuemin="-128" aria-valuemax="128"
+        aria-valuenow="0" aria-valuetext="正前方">
+        <span class="joystick-ring" aria-hidden="true"></span>
+        <span class="joystick-dir dir-up" aria-hidden="true"></span>
+        <span class="joystick-dir dir-left" aria-hidden="true"></span>
+        <span class="joystick-dir dir-right" aria-hidden="true"></span>
+        <span class="joystick-dir dir-down" aria-hidden="true"></span>
+        <span class="joystick-knob" id="joystickKnob"><i aria-hidden="true"></i></span>
+      </div>
+    </div>
+    <button class="pose-action" id="nodHead" type="button" aria-label="点头">点头</button>
+  </section>
+
+  <!-- 聊天引擎：手势熄屏级沉浸，点击浮起半屏 -->
+  <button class="chat-fab" id="chatFab" type="button" aria-expanded="false" aria-controls="chatSheet" aria-label="打开聊天">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4V5z" fill="currentColor"/></svg>
+    <span>聊</span>
+  </button>
+
+  <div class="sheet-backdrop" id="chatBackdrop" hidden></div>
+  <section class="chat-sheet" id="chatSheet" aria-hidden="true" aria-label="和小栈聊天">
+    <div class="sheet-grabber" aria-hidden="true"></div>
+    <header class="sheet-head">
+      <h2>和小栈说说话</h2>
+      <span class="sheet-model-state" id="chatModelState">智能模式</span>
+    </header>
+    <p class="sheet-hint" id="chatFeedback" role="status" aria-live="polite"></p>
+    <div class="chat-log" id="chatLog" role="log" aria-live="polite" aria-relevant="additions text">
+      <p class="chat-empty" id="chatEmpty">摇杆之外，也可以对它说点什么。</p>
+    </div>
+    <div class="quick-prompts" aria-label="快捷提问">
+      <button type="button" data-chat-prompt="今天真开心啊！">今天真开心！</button>
+      <button type="button" data-chat-prompt="给我鼓励一下吧">给点鼓励</button>
+      <button type="button" data-chat-prompt="你叫什么名字">你叫什么</button>
+    </div>
+    <form class="chat-composer" id="chatComposer">
+      <textarea id="chatMessageInput" name="message" rows="1" maxlength="2000"
+        placeholder="说点什么…" autocomplete="off" enterkeyhint="send"></textarea>
+      <button id="chatSendButton" type="submit" aria-label="发送"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12l18-8-6 18-3-5-9-5z" fill="currentColor"/></svg></button>
+    </form>
+  </section>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "./vendor/three/three.module.js"
+      }
+    }
+  </script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

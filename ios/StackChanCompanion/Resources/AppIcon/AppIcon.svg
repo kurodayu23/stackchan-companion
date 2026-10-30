@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  App Icon 的**矢量源占位**。
+
+  ⛔ 本文件**不含任何图形与颜色**：App Icon 属于视觉层，视觉方向尚未拍板
+     （docs/research/63-夜间自主工作纪要-20261024.md §3.4；DESIGN.md §14 #1–#2）。
+
+  拍板后按下面的硬线补画（出处都是仓库文档）：
+    - F39  必须交付**分层矢量**，且**不预切圆角**（系统自己遮罩）
+          —— docs/research/19-设计底线-平台无关设计Floor规范.md §1.9
+    - F40  图层里不许有高光 / 投影 / 发光 / 模糊（同上）
+    - F41  前景层不许羽化 / 柔和边缘（同上）
+    - F42  必须有 mono 单色版，default / dark / mono 三种外观核心特征一致（同上）
+    - F43  **不许画成"官方小栈"的样子**（会让人误认成官方 App）（同上）
+    - 元素 ≤ 2 个、不含文字、全部本地化 —— DESIGN.md §6
+    - glyph 占容器 45%–60%，四周留 20%–25% 等距负空间 —— DESIGN.md §6
+
+  CI 流水线（.github/workflows/ios.yml 的 app-icon job）会检测本文件里的
+  TODO_PENDING_DESIGN_DECISION 标记：命中就跳过图标编译（因为还没有真正的图形）。
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!-- TODO_PENDING_DESIGN_DECISION: 视觉方向未拍板，本文件暂不画任何图形 -->
+</svg>

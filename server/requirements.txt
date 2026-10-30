@@ -1,0 +1,20 @@
+# StackChan 云端后端基座 —— 运行依赖
+#
+# 只列**本机 py -3.12 已装**且**代码里真实 import** 的包
+# （实测版本：websockets 15.0.1 / numpy 1.26.4 / scipy 1.17.1）
+#
+# 安装：py -3.12 -m pip install -r server/requirements.txt
+
+websockets>=15.0.1      # WebSocket 服务端与客户端（server/bridge、server/stackchan_ai/server.py）
+numpy>=1.26.4           # 韵律提取与离线音频合成（prosody.py、providers/stub.py）
+scipy>=1.17.1           # PCHIP 插值 / Butterworth / 中值滤波 / find_peaks（prosody.py）
+cryptography>=42.0.0    # 配网密钥的 RSA-OAEP 加解密（prototype/mobile/mobile_proxy.py）
+                        #   ⇒ 契约测试（server/tests/test_http_api.py）会 import 代理净化层，故列在这里
+
+# ── 以下三个本机也已安装，但当前代码**没有 import**（备用，按需启用）──
+# soundfile>=0.13.1     # 换 WAV 读写实现时用
+# httpx>=0.28.1         # 想把 urllib 换成 httpx 时用
+# requests>=2.32.5      # 同上
+#
+# ⚠ 本项目**不**要求任何 API Key 才能跑通全链路：
+#   没有 MINIMAX_API_KEY 时自动使用离线桩 provider（providers/stub.py）。

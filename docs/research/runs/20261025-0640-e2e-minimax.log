@@ -1,0 +1,61 @@
+# 真实 MiniMax 端到端闭环实测 —— 原始日志
+# 时间: 2026-10-25 06:40 (本地) | provider=minimax | persona=enfp
+# key 来自用户级环境变量，命令行与日志均不含 key 明文
+
+=== [A1] pipeline (same text, run 1) ===
+reply      : 诶，听到你这么说我也超开心！今天有什么好消息，愿意跟我分享吗？
+audio      : 6.095 s @ 16000 Hz mono
+keyframes  : 153 frames (expected 153 = ceil(6.095 * 25))
+duration   : 6.120 s
+yaw range  : [-44, 37] (0.1 deg, limit -1280..1280)
+pitch range: [703, 838] (0.1 deg, limit 30..870)
+payload    : 49133 B (no MAC prefix)
+features   : f0=246.6 Hz energy=-36.6 dBFS rate=5.03 Hz accents=15 pauses=6
+
+=== [A2] pipeline (same text, run 2) ===
+reply      : 诶，听你这么说我也很开心呀！今天有什么好事发生了吗？
+audio      : 4.598 s @ 16000 Hz mono
+keyframes  : 115 frames (expected 115 = ceil(4.598 * 25))
+duration   : 4.600 s
+yaw range  : [-45, 43] (0.1 deg, limit -1280..1280)
+pitch range: [711, 840] (0.1 deg, limit 30..870)
+payload    : 37096 B (no MAC prefix)
+features   : f0=254.3 Hz energy=-37.4 dBFS rate=5.88 Hz accents=9 pauses=6
+
+=== [A3] pipeline (same text, run 3) ===
+reply      : 诶，听你这么说我也超开心呀！今天是什么让你这么开心？
+audio      : 5.759 s @ 16000 Hz mono
+keyframes  : 144 frames (expected 144 = ceil(5.759 * 25))
+duration   : 5.760 s
+yaw range  : [-22, 48] (0.1 deg, limit -1280..1280)
+pitch range: [705, 840] (0.1 deg, limit 30..870)
+payload    : 46322 B (no MAC prefix)
+features   : f0=256.6 Hz energy=-36.2 dBFS rate=6.52 Hz accents=10 pauses=8
+
+=== [B1] full loop (demo, text 1) ===
+[server] listening on ws://127.0.0.1:0/stackChan/ws
+[server] provider=minimax persona=enfp key=***
+[server] devices=none apps=0
+[server] device online: mac=68ee8fd73668 path=/stackChan/ws?deviceType=StackChan&mac=68ee8fd73668
+[server] device text: {"type": "hello", "msg": "Hello from StackChan!"}
+[server] app connected: deviceId=demo-app mac=-
+[server] <- app 0x07 textMessage (51 B)
+[server] 0x14 dance -> device 68ee8fd73668 (48857 B)
+[server] pipeline done: frames=152 dur=6.08s yaw=[-49, 45] pitch=[703, 838] -> 1 device(s)
+[demo] [device] 0x14 frames=152 total=6.08s yaw=[-49, 45] pitch=[703, 838] payload=48857B frame=48862B macPrefix=False array=True
+[server] app disconnected: deviceId=demo-app
+[server] device offline: mac=68ee8fd73668
+
+=== [B2] full loop (demo, text 2) ===
+[server] listening on ws://127.0.0.1:0/stackChan/ws
+[server] provider=minimax persona=enfp key=***
+[server] devices=none apps=0
+[server] device online: mac=68ee8fd73668 path=/stackChan/ws?deviceType=StackChan&mac=68ee8fd73668
+[server] device text: {"type": "hello", "msg": "Hello from StackChan!"}
+[server] app connected: deviceId=demo-app mac=-
+[server] <- app 0x07 textMessage (51 B)
+[server] 0x14 dance -> device 68ee8fd73668 (60092 B)
+[server] pipeline done: frames=187 dur=7.48s yaw=[-48, 44] pitch=[693, 828] -> 1 device(s)
+[demo] [device] 0x14 frames=187 total=7.48s yaw=[-48, 44] pitch=[693, 828] payload=60092B frame=60097B macPrefix=False array=True
+[server] app disconnected: deviceId=demo-app
+[server] device offline: mac=68ee8fd73668

@@ -1,0 +1,216 @@
+name: ios
+
+# ============================================================================
+# iOS 工程的 CI
+#
+# ⚠️ **本 workflow 在本机（Windows / 无 Xcode）从未跑过** ——
+#    所有 macOS 相关步骤（xcodegen / xcodebuild / actool / swift test）都**只**在
+#    GitHub Actions 的 macOS runner 上真跑才算数。
+#    本地复现命令见 ios/README.md。
+#
+# 四个 job：
+#   1. build     —— xcodegen 生成工程 + xcodebuild 编译（iOS 17 目标）
+#   2. app-icon  —— App Icon 流水线（sips / iconutil / actool），官方流程绕不开 macOS
+#   3. test      —— CoreProtocol 单元测试（swift test，不需要模拟器）
+#   4. offline   —— 本机的两个离线校验脚本（Python，无 Swift 也能跑）
+# ============================================================================
+
+on:
+  push:
+    paths:
+      - "ios/**"
+      - ".github/workflows/ios.yml"
+  pull_request:
+    paths:
+      - "ios/**"
+      - ".github/workflows/ios.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+  # -------------------------------------------------------------------------
+  build:
+    name: Build (xcodegen + xcodebuild)
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        working-directory: ios
+        run: |
+          xcodegen generate
+          ls -la StackChanCompanion.xcodeproj
+
+      - name: Build (generic iOS device)
+        working-directory: ios
+        # CODE_SIGNING_ALLOWED=NO：CI 上没有签名证书，只验证"能不能编过"
+        run: |
+          xcodebuild \
+            -project StackChanCompanion.xcodeproj \
+            -scheme StackChanCompanion \
+            -configuration Debug \
+            -destination 'generic/platform=iOS' \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcodebuild-log
+          path: ios/*.log
+          if-no-files-found: ignore
+
+  # -------------------------------------------------------------------------
+  app-icon:
+    name: App Icon pipeline (sips / iconutil / actool)
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check App Icon source
+        id: src
+        run: |
+          SRC="ios/StackChanCompanion/Resources/AppIcon/AppIcon.svg"
+          if [ ! -f "$SRC" ]; then
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::没有 App Icon 源文件，跳过图标流水线。"
+          elif grep -q "TODO_PENDING_DESIGN_DECISION" "$SRC"; then
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::App Icon 源仍是占位（视觉方向未拍板），跳过图标流水线。"
+          else
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Rasterize SVG -> 1024 PNG
+        if: steps.src.outputs.found == 'true'
+        run: |
+          brew install librsvg
+          mkdir -p /tmp/appicon
+          rsvg-convert -w 1024 -h 1024 \
+            ios/StackChanCompanion/Resources/AppIcon/AppIcon.svg \
+            -o /tmp/appicon/AppIcon-1024.png
+          sips -g pixelWidth -g pixelHeight /tmp/appicon/AppIcon-1024.png
+
+      - name: Build .appiconset with sips
+        if: steps.src.outputs.found == 'true'
+        run: |
+          set -euo pipefail
+          SRC="ios/StackChanCompanion/Resources/AppIcon/AppIcon.svg"
+          WORK=/tmp/appicon
+          rm -rf "$WORK/AppIcon.appiconset"
+          mkdir -p "$WORK/AppIcon.appiconset"
+          for SIZE in 40 60 58 87 80 120 180; do
+            sips -z "$SIZE" "$SIZE" "$WORK/AppIcon-1024.png" \
+              --out "$WORK/AppIcon.appiconset/AppIcon-$SIZE.png" >/dev/null
+          done
+          cp "$WORK/AppIcon-1024.png" "$WORK/AppIcon.appiconset/AppIcon-1024.png"
+          cat > "$WORK/AppIcon.appiconset/Contents.json" <<'JSON'
+          {
+            "images" : [
+              { "filename" : "AppIcon-40.png", "idiom" : "iphone", "scale" : "2x", "size" : "20x20" },
+              { "filename" : "AppIcon-60.png", "idiom" : "iphone", "scale" : "3x", "size" : "20x20" },
+              { "filename" : "AppIcon-58.png", "idiom" : "iphone", "scale" : "2x", "size" : "29x29" },
+              { "filename" : "AppIcon-87.png", "idiom" : "iphone", "scale" : "3x", "size" : "29x29" },
+              { "filename" : "AppIcon-80.png", "idiom" : "iphone", "scale" : "2x", "size" : "40x40" },
+              { "filename" : "AppIcon-120.png", "idiom" : "iphone", "scale" : "3x", "size" : "40x40" },
+              { "filename" : "AppIcon-120.png", "idiom" : "iphone", "scale" : "2x", "size" : "60x60" },
+              { "filename" : "AppIcon-180.png", "idiom" : "iphone", "scale" : "3x", "size" : "60x60" },
+              { "filename" : "AppIcon-1024.png", "idiom" : "ios-marketing", "scale" : "1x", "size" : "1024x1024" }
+            ],
+            "info" : { "author" : "xcode", "version" : 1 }
+          }
+          JSON
+          echo "--- actool 编译校验 ---"
+          xcrun actool \
+            --compile "$WORK/Assets.car" \
+            --platform iphoneos \
+            --minimum-deployment-target 17.0 \
+            --app-icon AppIcon \
+            --output-partial-info-plist "$WORK/partial-info.plist" \
+            "$WORK/AppIcon.appiconset"
+          ls -la "$WORK"
+
+      - name: Build .icns with iconutil
+        if: steps.src.outputs.found == 'true'
+        run: |
+          set -euo pipefail
+          WORK=/tmp/appicon
+          rm -rf "$WORK/AppIcon.iconset"
+          mkdir -p "$WORK/AppIcon.iconset"
+          for SIZE in 16 32 64 128 256 512 1024; do
+            sips -z "$SIZE" "$SIZE" "$WORK/AppIcon-1024.png" \
+              --out "$WORK/AppIcon.iconset/icon_${SIZE}x${SIZE}.png" >/dev/null
+          done
+          cp "$WORK/AppIcon-1024.png" "$WORK/AppIcon.iconset/icon_512x512@2x.png"
+          cat > "$WORK/AppIcon.iconset/Contents.json" <<'JSON'
+          {
+            "images" : [
+              { "filename" : "icon_16x16.png", "idiom" : "mac", "scale" : "1x", "size" : "16x16" },
+              { "filename" : "icon_32x32.png", "idiom" : "mac", "scale" : "2x", "size" : "16x16" },
+              { "filename" : "icon_32x32.png", "idiom" : "mac", "scale" : "1x", "size" : "32x32" },
+              { "filename" : "icon_64x64.png", "idiom" : "mac", "scale" : "2x", "size" : "32x32" },
+              { "filename" : "icon_128x128.png", "idiom" : "mac", "scale" : "1x", "size" : "128x128" },
+              { "filename" : "icon_256x256.png", "idiom" : "mac", "scale" : "2x", "size" : "128x128" },
+              { "filename" : "icon_256x256.png", "idiom" : "mac", "scale" : "1x", "size" : "256x256" },
+              { "filename" : "icon_512x512.png", "idiom" : "mac", "scale" : "2x", "size" : "256x256" },
+              { "filename" : "icon_512x512.png", "idiom" : "mac", "scale" : "1x", "size" : "512x512" },
+              { "filename" : "icon_512x512@2x.png", "idiom" : "mac", "scale" : "2x", "size" : "512x512" }
+            ],
+            "info" : { "author" : "xcode", "version" : 1 }
+          }
+          JSON
+          iconutil -c icns "$WORK/AppIcon.iconset" -o "$WORK/AppIcon.icns"
+          ls -la "$WORK/AppIcon.icns"
+
+      - name: Upload icon artifacts
+        if: always() && steps.src.outputs.found == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-icon-artifacts
+          path: /tmp/appicon
+
+  # -------------------------------------------------------------------------
+  test:
+    name: Unit tests (CoreProtocol)
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show toolchain
+        run: |
+          swift --version
+
+      # CoreProtocol 是独立 Swift Package，测试**不需要模拟器**，也不需要 Xcode 工程
+      - name: swift test
+        run: |
+          swift test --package-path ios/StackChanCompanion/CoreProtocol
+
+  # -------------------------------------------------------------------------
+  offline:
+    name: Offline static checks (no Swift needed)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: validate_project.py
+        run: python ios/tools/validate_project.py
+
+      - name: frame_spec_check.py
+        run: python ios/tools/frame_spec_check.py

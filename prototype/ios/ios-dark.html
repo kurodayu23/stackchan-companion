@@ -1,0 +1,1803 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-appearance="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>StackChan · iOS 原生交互原型 · 深色</title>
+<style>
+/* ==========================================================================
+   StackChan · iOS 原生交互原型（深色）
+   平台语言依据：Apple HIG（官方缓存 hig-tabbars.json / hig-materials.txt）
+                 + 仓库 DESIGN.md §2/§3/§5/§6/§7/§8/§9
+                 + docs/research/08-iOS26视觉规范.md（该文自述为像素估计，非官方值）
+   每个数值的出处见 prototype/ios/README.md「数值出处表」
+   ========================================================================== */
+
+:root{
+  /* ── 系统语义色（深色）────────────────────────────────────────
+     出处：Apple HIG `color.md` Specifications → System colors
+     （docs/spec/08 §6.1，T1 官方明文，iOS 26）
+     注意：禁止硬编码系统色 —— SwiftUI 侧必须用 `Color.blue` 等 API
+           （docs/spec/08 §6.4 `IOS-COL-01`）。此处仅原型展示用。    */
+  --system-background:#000000;
+  --secondary-system-background:#1C1C1E;
+  --system-grouped-background:#000000;
+  --secondary-system-grouped-background:#1C1C1E;
+  --label:#FFFFFF;
+  --secondary-label:rgba(235,235,245,0.60);
+  --tertiary-label:rgba(235,235,245,0.30);
+  --separator:rgba(84,84,88,0.65);
+  --system-blue:#0091FF;      /* T1: R0 G145 B255（iOS 26；旧值 #0A84FF 已作废） */
+  --system-green:#30D158;     /* T1: R48 G209 B88 */
+  --system-red:#FF4245;       /* T1: R255 G66 B69（旧值 #FF453A 已作废） */
+  --system-gray5:#2C2C2E;     /* T1: R44 G44 B46（systemGray5） */
+  --system-fill:rgba(120,120,128,0.36);
+  --secondary-system-fill:rgba(120,120,128,0.32);
+  --tertiary-system-fill:rgba(118,118,128,0.24);
+  --switch-off:#39393D;
+
+  /* 页面级角色 */
+  --page-bg:var(--system-background);
+  --grouped-page-bg:var(--system-grouped-background);
+  --group-bg:var(--secondary-system-grouped-background);
+  --bubble-in:var(--system-gray5);
+  --accent:#AF4C37;
+  --accent-soft:rgba(175,76,55,0.12);--accent-mid:rgba(175,76,55,0.30);
+  --on-accent:#FFFFFF;
+  --bubble-out:var(--accent);
+  --bubble-out-text:var(--on-accent);
+  --nav-material:rgba(22,22,24,0.72);
+  --tab-material:rgba(28,28,30,0.72);
+  --composer-bg:rgba(120,120,128,0.24);
+  --composer-btn-bg:rgba(120,120,128,0.32);
+  --stage-bg:#2C2C2E;
+
+  /* ── 排版（出处：DESIGN.md §3.1 iOS 阶梯，源自 HIG typography.md） */
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Helvetica Neue","PingFang SC","Segoe UI","Microsoft YaHei UI",Arial,sans-serif;
+  --fs-large-title:34px;   /* DESIGN.md §3.1 largeTitle */
+  --fs-title:17px;         /* DESIGN.md §3.1 headline / body */
+  --fs-subhead:15px;       /* DESIGN.md §3.1 subhead */
+  --fs-footnote:13px;      /* DESIGN.md §3.1 footnote */
+  --fs-caption:12px;       /* DESIGN.md §3.1 caption1 */
+  --fs-tab:10px;           /* iOS 标签栏文字 */
+  --lh-body:22px;          /* DESIGN.md §3.1 body 行高 */
+
+  /* ── 形状（出处：DESIGN.md §5） */
+  --r-control:12px;
+  --r-group:11px;          /* DESIGN.md §9 Inset Grouped 10–12pt */
+  --r-sheet:12px;
+  --r-full:999px;
+
+  /* ── 间距（出处：DESIGN.md §4 档位 4/8/12/16/20/24/32） */
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px; --sp-6:24px; --sp-8:32px;
+  --page-margin:20px;      /* DESIGN.md §4 页面左右边距 20pt */
+  --group-margin:16px;     /* 08 号 L115 屏幕左右外边距 16pt */
+
+  /* ── 动效（出处：DESIGN.md §8） ───────────────────────────── */
+  --t-press:120ms;                                   /* press 档 120–150ms */
+  --t-screen:350ms;                                  /* screen 档 300–400ms */
+  --t-toggle:200ms;                                  /* toggle 档 200ms */
+  --e-emphasized:cubic-bezier(0.32,0.72,0,1);       /* 页面转场曲线 */
+  --e-standard:cubic-bezier(0.2,0.8,0.2,1);         /* DESIGN.md §8 主曲线 */
+}
+
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  margin:0;background:var(--stage-bg);
+  font-family:var(--font);
+  -webkit-font-smoothing:antialiased;
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;
+}
+
+/* ── 机身 ─────────────────────────────────────────────────────── */
+.device{
+  width:404px;height:858px;border-radius:64px;padding:7px;
+  background:#0B0B0D;position:relative;
+  box-shadow:0 26px 60px rgba(0,0,0,0.42);
+  corner-shape:squircle;
+}
+.screen{
+  width:390px;height:844px;position:relative;overflow:hidden;
+  border-radius:57px;background:var(--system-background);
+  corner-shape:squircle;
+  user-select:none;
+}
+.ic{width:24px;height:24px;display:block;fill:none;color:inherit}
+.ic path,.ic rect,.ic circle{vector-effect:non-scaling-stroke}
+
+/* ── 状态栏 ───────────────────────────────────────────────────── */
+.statusbar{
+  position:absolute;top:0;left:0;right:0;height:59px;z-index:60;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 26px 0 33px;pointer-events:none;color:var(--label);
+}
+.sb-time{font-size:16px;font-weight:600;letter-spacing:0.2px}
+.sb-right{display:flex;align-items:center;gap:6px}
+.sb-ic{display:block}
+.sb-cellular{width:18px;height:12px}
+.sb-wifi{width:17px;height:12px}
+.sb-battery{width:27px;height:13px}
+.island{
+  position:absolute;top:11px;left:50%;transform:translateX(-50%);
+  width:125px;height:37px;border-radius:19px;background:#000;z-index:70;
+}
+.home-indicator{
+  position:absolute;left:50%;bottom:8px;transform:translateX(-50%);
+  width:140px;height:5px;border-radius:3px;background:var(--label);opacity:0.85;
+  z-index:80;pointer-events:none;
+}
+
+/* ── 页面与导航栈 ─────────────────────────────────────────────── */
+.page{position:absolute;inset:0;background:var(--page-bg);display:none;overflow:hidden}
+.page.active{display:block}
+.page.entering{transform:translateX(100%)}
+.page.under{transform:scale(0.92)}
+.page{transition:transform var(--t-screen) var(--e-emphasized)}
+.page-dim{position:absolute;inset:0;background:#000;opacity:0;transition:opacity var(--t-screen) var(--e-emphasized);pointer-events:none;z-index:1}
+.page.under .page-dim{opacity:0.22}
+
+.navbar{
+  position:absolute;top:0;left:0;right:0;height:103px;padding-top:59px;z-index:30;
+  background:transparent;transition:background-color 200ms linear;
+}
+.page.scrolled .navbar{
+  background:var(--nav-material);
+  -webkit-backdrop-filter:blur(20px) saturate(180%);
+  backdrop-filter:blur(20px) saturate(180%);
+}
+.nav-row{height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;position:relative}
+.nav-leading,.nav-trailing{display:flex;align-items:center;gap:2px;min-width:44px}
+.nav-trailing{justify-content:flex-end}
+.nav-title-small{
+  position:absolute;left:0;right:0;text-align:center;pointer-events:none;
+  font-size:var(--fs-title);font-weight:600;letter-spacing:-0.43px;color:var(--label);
+  opacity:1;transition:opacity 180ms linear;
+}
+.page.has-large .nav-title-small{opacity:0}
+.page.has-large.scrolled .nav-title-small{opacity:1}
+.nav-back,.nav-btn{
+  border:0;background:transparent;padding:0;cursor:pointer;color:var(--accent);
+  display:flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;
+}
+.nav-btn{color:var(--label);min-width:32px}
+.nav-back{justify-content:flex-start;gap:1px;font-size:var(--fs-title);letter-spacing:-0.43px}
+.chev-back{width:8px;height:14px;flex:none}
+.chev{width:8px;height:14px;flex:none;color:var(--tertiary-label)}
+
+.scroll{
+  position:absolute;inset:0;overflow-y:auto;overscroll-behavior:contain;
+  padding-top:103px;
+}
+.scroll::-webkit-scrollbar{display:none}
+.page-pad{padding-left:var(--page-margin);padding-right:var(--page-margin)}
+.group-wrap{padding-left:var(--group-margin);padding-right:var(--group-margin)}
+.large-title{
+  font-size:var(--fs-large-title);font-weight:700;letter-spacing:0.37px;line-height:41px;
+  margin:0;padding:2px var(--page-margin) 6px;color:var(--label);
+}
+
+/* ── 小栈的脸（设备端几何，出处见 README） ─────────────────── */
+.face-wrap{padding:0 0 var(--sp-2)}
+.face{display:block;width:100%;height:auto;border-radius:10px;cursor:pointer}
+.status-line{display:flex;justify-content:center;gap:var(--sp-2);padding:2px 0 var(--sp-4)}
+.status-chip{
+  font-size:var(--fs-footnote);color:var(--secondary-label);letter-spacing:-0.08px;
+  background:var(--secondary-system-fill);border-radius:var(--r-full);padding:3px 10px;
+}
+
+/* ── 对话流（iOS 消息气泡形态） ─────────────────────────────── */
+.thread{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding-bottom:var(--sp-3)}
+.bubble{
+  max-width:78%;padding:9px 14px;border-radius:18px;
+  font-size:var(--fs-title);line-height:var(--lh-body);letter-spacing:-0.43px;
+  margin-bottom:2px;word-break:break-word;
+}
+.bubble.in{background:var(--bubble-in);color:var(--label);border-bottom-left-radius:6px;align-self:flex-start}
+.bubble.out{background:var(--bubble-out);color:var(--bubble-out-text);border-bottom-right-radius:6px;align-self:flex-end}
+.sys-event{
+  align-self:center;text-align:center;font-size:var(--fs-caption);color:var(--secondary-label);
+  padding:6px 0;letter-spacing:0;
+}
+
+/* ── Inset Grouped 列表 ─────────────────────────────────────── */
+.group-header{
+  font-size:var(--fs-footnote);color:var(--secondary-label);
+  padding:0 16px 7px;letter-spacing:-0.08px;
+}
+.group{
+  background:var(--group-bg);border-radius:var(--r-group);overflow:hidden;
+  margin-bottom:22px;               /* 08 号 L116 组间纵向间距 18–24pt */
+  corner-shape:squircle;
+}
+.row{
+  position:relative;display:flex;align-items:center;justify-content:space-between;
+  gap:12px;min-height:44px;padding:0 16px;      /* 08 号 L113 行高 44–52pt */
+  font-size:var(--fs-title);letter-spacing:-0.43px;color:var(--label);
+  background:transparent;border:0;width:100%;text-align:left;
+}
+button.row{cursor:pointer}
+.row + .row::after{
+  content:"";position:absolute;left:16px;right:0;top:0;height:0.5px;
+  background:var(--separator);                     /* 08 号 L118 0.5pt，左缩进 16pt */
+}
+.row-label{flex:1;min-width:0}
+.row-value{color:var(--secondary-label);font-size:var(--fs-title);letter-spacing:-0.43px;flex:none}
+.row-tap .row-value{margin-right:2px}
+
+/* 开关 51×31pt（出处：08 号 L108 / DESIGN.md §9） */
+.switch{
+  width:51px;height:31px;border-radius:16px;border:0;flex:none;cursor:pointer;
+  background:var(--switch-off);position:relative;padding:0;
+  transition:background-color var(--t-toggle) var(--e-standard);
+}
+.switch[data-on="1"]{background:var(--system-green)}
+.switch .knob{
+  position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:14px;background:#fff;
+  box-shadow:0 3px 8px rgba(0,0,0,0.15),0 1px 1px rgba(0,0,0,0.16);
+  transition:transform var(--t-toggle) var(--e-standard);
+}
+.switch[data-on="1"] .knob{transform:translateX(20px)}
+
+/* 分段控件（UISegmentedControl 形态，32pt 高） */
+.seg{display:flex;background:var(--tertiary-system-fill);border-radius:9px;padding:2px;height:32px}
+.seg button{
+  flex:1;border:0;background:transparent;border-radius:7px;cursor:pointer;
+  font-family:var(--font);font-size:13px;color:var(--label);padding:0;
+  transition:background-color var(--t-toggle) var(--e-standard);
+}
+.seg button[aria-selected="true"]{
+  background:var(--system-background);font-weight:500;
+  box-shadow:0 3px 8px rgba(0,0,0,0.12),0 1px 1px rgba(0,0,0,0.10);
+}
+
+/* ── 标签栏（浮动毛玻璃条，出处：HIG hig-tabbars.json 官方原文
+      「A tab bar floats above content at the bottom of the screen」） ── */
+.tabbar{
+  position:absolute;left:12px;right:12px;bottom:24px;height:56px;z-index:40;
+  border-radius:26px;background:var(--tab-material);
+  -webkit-backdrop-filter:blur(24px) saturate(180%);
+  backdrop-filter:blur(24px) saturate(180%);
+  display:flex;align-items:stretch;
+  box-shadow:0 4px 10px rgba(0,0,0,0.08);
+  transition:transform 300ms var(--e-emphasized),opacity 220ms linear;
+  corner-shape:squircle;
+}
+.tabbar.hidden{transform:translateY(150%);opacity:0;pointer-events:none}
+.tab-item{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  border:0;background:transparent;cursor:pointer;padding:0;color:var(--label);
+  font-family:var(--font);
+}
+.tab-item .ic{width:26px;height:26px}
+.tab-label{font-size:var(--fs-tab);line-height:12px;font-weight:500;letter-spacing:0.06px}
+.tab-item[aria-selected="true"]{color:var(--accent)}
+
+/* ── 输入区 ─────────────────────────────────────────────────── */
+.composer{position:absolute;left:0;right:0;bottom:0;z-index:25;padding:8px 16px 12px}
+.page[data-depth="0"] .composer{bottom:92px}
+.composer-shell{
+  display:flex;align-items:center;gap:6px;height:38px;padding:0 4px 0 14px;
+  background:var(--composer-bg);border-radius:19px;
+}
+.composer-input{
+  flex:1;min-width:0;border:0;outline:none;background:transparent;
+  font-family:var(--font);font-size:var(--fs-title);letter-spacing:-0.43px;color:var(--label);
+}
+.composer-input::placeholder{color:var(--tertiary-label)}
+.composer-btn{
+  width:30px;height:30px;border-radius:15px;border:0;flex:none;cursor:pointer;
+  background:var(--composer-btn-bg);color:var(--label);
+  display:flex;align-items:center;justify-content:center;
+}
+.composer-btn .ic{width:17px;height:17px}
+.composer-shell.has-text .mic{display:none}
+.composer-shell:not(.has-text) .send{display:none}
+.composer-shell.has-text .send{background:var(--accent);color:var(--bubble-out-text)}
+.composer-shell.listening{border:1px solid var(--accent);padding:0 3px 0 13px}
+.composer-shell.listening .mic{background:var(--accent);color:var(--bubble-out-text)}
+
+/* ── Sheet ───────────────────────────────────────────────────── */
+.scrim{
+  position:absolute;inset:0;background:rgba(0,0,0,0.40);opacity:0;z-index:50;
+  pointer-events:none;transition:opacity 300ms linear;
+}
+.scrim.on{opacity:1;pointer-events:auto}
+.sheet{
+  position:absolute;left:0;right:0;bottom:0;z-index:55;
+  background:var(--system-background);
+  border-radius:var(--r-sheet) var(--r-sheet) 0 0;
+  transform:translateY(100%);
+  transition:transform var(--t-screen) var(--e-emphasized);
+  max-height:78%;display:flex;flex-direction:column;
+  box-shadow:0 -1px 0 rgba(0,0,0,0.06);
+  corner-shape:squircle;
+}
+.sheet.open{transform:translateY(0)}
+.sheet-grabber{width:36px;height:5px;border-radius:3px;background:var(--tertiary-label);margin:6px auto 0;flex:none}
+.sheet-head{display:flex;align-items:center;justify-content:space-between;padding:10px 16px 6px;flex:none}
+.sheet-title{font-size:var(--fs-title);font-weight:600;letter-spacing:-0.43px}
+.sheet-done{border:0;background:transparent;color:var(--accent);font-family:var(--font);font-size:var(--fs-title);cursor:pointer;padding:8px 0;min-height:44px}
+.sheet-body{overflow-y:auto;padding:0 0 34px}
+.sheet-body::-webkit-scrollbar{display:none}
+
+/* ── 触感反馈的视觉模拟（出处：DESIGN.md §8 press 档 scale 0.96 / 120ms） ── */
+.press{transition:transform var(--t-press) var(--e-standard)}
+.press.pressed{transform:scale(0.96)}
+
+@media (prefers-reduced-motion:reduce){
+  *{transition-duration:1ms !important;animation:none !important}
+}
+/* ==== SCHEME-SWITCHER (injected 2026-10-25) ==== */
+
+/* 4 套视觉方案（用户 2026-10-25 拍板「风格都做」）
+   取值抄自 prototype/variants/ 的 4 个原型；只覆盖**配色**，
+   排版 / 圆角 / 间距 / 动效是 iOS 原生硬线，4 套共用。 */
+
+html[data-scheme="paper-terracotta"]{
+  --page-bg:#FAF8F5;
+  --grouped-page-bg:#F1ECE4;
+  --group-bg:#FFFDFA;
+  --bubble-in:#F1ECE4;
+  --accent:#AF4C37;
+  --accent-soft:rgba(175,76,55,0.10);--accent-mid:rgba(175,76,55,0.28);
+  --on-accent:#FFFFFF;
+  --nav-material:rgba(250,248,245,0.78);
+  --tab-material:rgba(241,236,228,0.80);
+  --composer-bg:rgba(56,44,36,0.08);
+  --composer-btn-bg:rgba(56,44,36,0.12);
+  --stage-bg:#C9BFB2;
+  --label:#241F1B;
+  --secondary-label:rgba(56,44,36,0.88);
+  --tertiary-label:rgba(56,44,36,0.78);
+  --separator:rgba(56,44,36,0.16);
+}
+
+html[data-appearance="dark"][data-scheme="paper-terracotta"]{--page-bg:#16130F;--grouped-page-bg:#221E18;--group-bg:#241F19;
+  --bubble-in:#2C261F;--accent:#E08A6B;
+  --accent-soft:rgba(224,138,107,0.10);--accent-mid:rgba(224,138,107,0.28);--on-accent:#241B14;
+  --nav-material:rgba(22,19,15,0.80);--tab-material:rgba(34,30,24,0.82);
+  --composer-bg:rgba(236,228,216,0.09);--composer-btn-bg:rgba(236,228,216,0.14);
+  --stage-bg:#3A342C;--label:#F2EDE5;--secondary-label:rgba(236,228,216,0.62);
+  --tertiary-label:rgba(236,228,216,0.40);--separator:rgba(236,228,216,0.14);}
+
+html[data-scheme="pure-white-blank"]{
+  --page-bg:#FFFFFF;
+  --grouped-page-bg:#F5F6F8;
+  --group-bg:#FAFAFB;
+  --bubble-in:#F5F6F8;
+  --accent:#B74332;
+  --accent-soft:rgba(183,67,50,0.10);--accent-mid:rgba(183,67,50,0.28);
+  --on-accent:#FFFFFF;
+  --nav-material:rgba(255,255,255,0.80);
+  --tab-material:rgba(245,246,248,0.82);
+  --composer-bg:rgba(0,0,0,0.05);
+  --composer-btn-bg:rgba(0,0,0,0.08);
+  --stage-bg:#D2D2D7;
+  --label:#1D1D1F;
+  --secondary-label:rgba(60,60,67,0.62);
+  --tertiary-label:rgba(60,60,67,0.32);
+  --separator:rgba(60,60,67,0.29);
+}
+
+html[data-appearance="dark"][data-scheme="pure-white-blank"]{--page-bg:#000000;--grouped-page-bg:#0A0A0B;--group-bg:#121214;
+  --bubble-in:#1C1C1E;--accent:#FF453A;
+  --accent-soft:rgba(255,69,58,0.10);--accent-mid:rgba(255,69,58,0.28);--on-accent:#FFFFFF;
+  --nav-material:rgba(0,0,0,0.80);--tab-material:rgba(10,10,11,0.82);
+  --composer-bg:rgba(120,120,128,0.24);--composer-btn-bg:rgba(120,120,128,0.32);
+  --stage-bg:#1C1C1E;--label:#FFFFFF;--secondary-label:rgba(235,235,245,0.60);
+  --tertiary-label:rgba(235,235,245,0.32);--separator:rgba(84,84,88,0.55);}
+
+html[data-scheme="warm-paper-serif"]{
+  --page-bg:#EAE6DE;
+  --grouped-page-bg:#E3DED4;
+  --group-bg:#F7F4EE;
+  --bubble-in:#E3DED4;
+  --accent:#9E3B26;
+  --accent-soft:rgba(158,59,38,0.10);--accent-mid:rgba(158,59,38,0.28);
+  --on-accent:#FFFFFF;
+  --nav-material:rgba(234,230,222,0.80);
+  --tab-material:rgba(227,222,212,0.82);
+  --composer-bg:rgba(42,35,28,0.07);
+  --composer-btn-bg:rgba(42,35,28,0.11);
+  --stage-bg:#BFB4A4;
+  --label:#2A231C;
+  --secondary-label:#4C4237;
+  --tertiary-label:#696053;
+  --separator:rgba(42,35,28,0.18);
+}
+
+html[data-appearance="dark"][data-scheme="warm-paper-serif"]{--page-bg:#17130E;--grouped-page-bg:#221C15;--group-bg:#262019;
+  --bubble-in:#2E271E;--accent:#E09A6A;
+  --accent-soft:rgba(224,154,106,0.10);--accent-mid:rgba(224,154,106,0.28);--on-accent:#1E1409;
+  --nav-material:rgba(23,19,14,0.80);--tab-material:rgba(34,28,21,0.82);
+  --composer-bg:rgba(240,230,214,0.09);--composer-btn-bg:rgba(240,230,214,0.14);
+  --stage-bg:#3B322A;--label:#F3EBDF;--secondary-label:rgba(240,230,214,0.62);
+  --tertiary-label:rgba(240,230,214,0.40);--separator:rgba(240,230,214,0.15);}
+
+html[data-scheme="tuck-dark-calm"]{
+  --page-bg:#111113;
+  --grouped-page-bg:#1C1C1F;
+  --group-bg:#1E1E21;
+  --bubble-in:#26262A;
+  --accent:#E3A857;
+  --accent-soft:rgba(227,168,87,0.10);--accent-mid:rgba(227,168,87,0.28);
+  --on-accent:#1A1208;
+  --nav-material:rgba(28,28,31,0.80);
+  --tab-material:rgba(38,38,42,0.82);
+  --composer-bg:rgba(236,236,238,0.09);
+  --composer-btn-bg:rgba(236,236,238,0.14);
+  --stage-bg:#3A3A40;
+  --label:#ECECEE;
+  --secondary-label:#B6B6BE;
+  --tertiary-label:#8D8D92;
+  --separator:rgba(236,236,238,0.16);
+}
+
+html[data-appearance="dark"][data-scheme="tuck-dark-calm"]{--page-bg:#111113;
+  --grouped-page-bg:#1C1C1F;
+  --group-bg:#1E1E21;
+  --bubble-in:#26262A;
+  --accent:#E3A857;
+  --accent-soft:rgba(227,168,87,0.10);--accent-mid:rgba(227,168,87,0.28);
+  --on-accent:#1A1208;
+  --nav-material:rgba(28,28,31,0.80);
+  --tab-material:rgba(38,38,42,0.82);
+  --composer-bg:rgba(236,236,238,0.09);
+  --composer-btn-bg:rgba(236,236,238,0.14);
+  --stage-bg:#3A3A40;
+  --label:#ECECEE;
+  --secondary-label:#B6B6BE;
+  --tertiary-label:#8D8D92;
+  --separator:rgba(236,236,238,0.16);}
+
+
+/* 切换器浮层（中性色，不受方案影响 —— 避免"切换器自己变样"造成误判） */
+.scheme-switcher{
+  position:fixed;top:10px;right:10px;z-index:9999;
+  display:flex;gap:6px;align-items:center;
+  padding:6px;border-radius:12px;
+  background:rgba(128,128,128,0.20);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  font:500 11px/1 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+.scheme-switcher button{
+  width:26px;height:26px;border-radius:8px;border:1.5px solid rgba(128,128,128,0.45);
+  padding:0;cursor:pointer;position:relative;
+}
+.scheme-switcher button[aria-pressed="true"]{
+  border-color:rgba(128,128,128,0.95);
+  box-shadow:0 0 0 2px rgba(128,128,128,0.28);
+}
+.scheme-switcher button::after{
+  content:attr(data-label);
+  position:absolute;left:50%;top:calc(100% + 5px);transform:translateX(-50%);
+  font-size:10px;white-space:nowrap;color:inherit;opacity:0;
+  transition:opacity .12s ease-out;pointer-events:none;
+}
+.scheme-switcher button:hover::after{opacity:1;}
+
+/* ══════════════════════════════════════════════════════════════
+   v2 · 控制台版（2026-10-25 用户拍板：主界面=舵机控制台）
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── 设备卡：脸 + 实时状态 overlay ───────────────────────── */
+.device-card{
+  position:relative;border-radius:20px;overflow:hidden;background:#000;
+  box-shadow:0 8px 24px -10px rgba(0,0,0,.45),0 1px 2px rgba(0,0,0,.14);
+}
+.device-card .face{border-radius:0;cursor:default}
+.device-card::after{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(180deg,rgba(255,255,255,.10) 0%,rgba(255,255,255,0) 32%,rgba(0,0,0,0) 55%,rgba(0,0,0,.55) 100%);
+  border-radius:20px;
+}
+.device-ov{
+  position:absolute;left:0;right:0;bottom:0;z-index:2;
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:26px 13px 11px;color:#fff;font-size:12px;letter-spacing:.1px;
+}
+.device-ov .l,.device-ov .r{display:flex;align-items:center;gap:6px}
+.live-dot{width:7px;height:7px;border-radius:50%;background:#30D158;box-shadow:0 0 0 0 rgba(48,209,88,.7);animation:live 2s infinite}
+@keyframes live{0%{box-shadow:0 0 0 0 rgba(48,209,88,.55)}70%{box-shadow:0 0 0 7px rgba(48,209,88,0)}100%{box-shadow:0 0 0 0 rgba(48,209,88,0)}}
+.device-ov .r{font-variant-numeric:tabular-nums}
+
+/* ── 身体信号灯带（Nothing Glyph 原则）─────────────────────────
+   硬件事实：左右两侧共 12 颗 RGB LED，属 0x14 关键帧通道（docs/spec/03）。
+   原则：状态走一条独立通道（灯），不靠文字复述；每种情绪有专属图案。 */
+.ov-sig{display:flex;gap:9px;align-items:center}
+.ov-sig .sig-half{display:flex;gap:3px}
+.ov-sig i{width:5px;height:5px;border-radius:50%;background:var(--accent);opacity:.24;transition:opacity .32s var(--e-standard)}
+.ov-sig i.on{opacity:1;box-shadow:0 0 7px var(--accent)}
+@media (prefers-reduced-motion: reduce){.ov-sig i{opacity:.55}}
+
+/* ── 舵机摇杆 ─────────────────────────────────────────────── */
+.joy-row{display:flex;align-items:center;gap:16px;padding:16px}
+.joy-pad{
+  position:relative;width:126px;height:126px;flex:none;border-radius:50%;
+  background:radial-gradient(circle at 50% 32%,var(--tertiary-system-fill),var(--secondary-system-fill));
+  border:1px solid var(--separator);touch-action:none;cursor:grab;
+  box-shadow:inset 0 1px 2px rgba(0,0,0,.04);
+}
+.joy-pad:active{cursor:grabbing}
+.joy-cross{position:absolute;inset:15px;border-radius:50%;border:1px dashed var(--separator)}
+.joy-cross::before,.joy-cross::after{content:"";position:absolute;background:var(--separator)}
+.joy-cross::before{left:50%;top:-6px;bottom:-6px;width:1px;transform:translateX(-.5px)}
+.joy-cross::after{top:50%;left:-6px;right:-6px;height:1px;transform:translateY(-.5px)}
+.joy-knob{
+  position:absolute;left:50%;top:50%;width:50px;height:50px;border-radius:25px;
+  background:var(--system-background);
+  box-shadow:0 3px 10px rgba(0,0,0,.24),0 1px 2px rgba(0,0,0,.18),inset 0 0 0 .5px rgba(0,0,0,.06);
+  transform:translate(-50%,-50%);transition:transform .14s var(--e-standard);
+  pointer-events:none;
+}
+.joy-pad.dragging .joy-knob{transition:none}
+.joy-read{flex:1;min-width:0}
+.joy-vals{display:flex;flex-direction:column;gap:7px;margin-bottom:11px}
+.joy-val{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.joy-val span{font-size:var(--fs-footnote);color:var(--secondary-label)}
+.joy-val b{font-size:19px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.4px;color:var(--label)}
+.joy-reset{
+  border:0;background:var(--secondary-system-fill);color:var(--accent);
+  font-family:var(--font);font-size:var(--fs-footnote);font-weight:600;
+  padding:7px 14px;border-radius:999px;cursor:pointer;
+}
+
+/* ── 表情 / 动作 ──────────────────────────────────────────── */
+.chip-row{display:flex;flex-wrap:wrap;gap:8px;padding:14px 16px}
+.chip{
+  border:0;background:var(--secondary-system-fill);color:var(--label);
+  font-family:var(--font);font-size:var(--fs-footnote);font-weight:500;
+  padding:8px 13px;border-radius:999px;cursor:pointer;
+  transition:background-color .16s var(--e-standard),color .16s var(--e-standard);
+}
+.chip[aria-selected="true"]{background:var(--accent);color:var(--on-accent)}
+.act-row{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--separator)}
+.act{
+  border:0;background:var(--group-bg);cursor:pointer;padding:14px 4px 12px;
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+  font-family:var(--font);font-size:11px;color:var(--label);
+  transition:background-color .16s var(--e-standard);
+}
+.act .ic{width:23px;height:23px;color:var(--accent)}
+.act:active{background:var(--tertiary-system-fill)}
+
+/* ── 主动作按钮（去和它说话） ─────────────────────────────── */
+.cta{
+  display:flex;align-items:center;justify-content:center;gap:9px;width:100%;
+  height:52px;border:0;border-radius:15px;cursor:pointer;
+  background:var(--accent);color:var(--on-accent);
+  font-family:var(--font);font-size:17px;font-weight:600;letter-spacing:-.4px;
+  box-shadow:0 6px 16px -6px var(--accent-mid);
+  transition:transform .12s var(--e-standard),filter .16s var(--e-standard);
+}
+.cta .ic{width:21px;height:21px}
+.cta:active{transform:scale(.97);filter:brightness(.94)}
+
+/* ── HUD（iOS 底部瞬时提示） ────────────────────────────────────────────────── */
+.hud{
+  position:absolute;left:50%;bottom:104px;transform:translate(-50%,14px);
+  z-index:45;opacity:0;pointer-events:none;
+  padding:9px 16px;border-radius:999px;font-size:13px;font-weight:500;
+  background:rgba(28,28,30,.90);color:#fff;backdrop-filter:blur(12px);
+  transition:opacity .22s var(--e-standard),transform .22s var(--e-standard);
+  white-space:nowrap;
+}
+.hud.on{opacity:1;transform:translate(-50%,0)}
+
+/* ── 行内小图标（设置里区分设备/网络/更新） ────────────────── */
+.row-ic{width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex:none;color:#fff}
+.row-ic .ic{width:14px;height:14px}
+.row-ic.bt{background:#0A84FF}.row-ic.wf{background:#30D158}
+.row-ic.up{background:#BF5AF2}.row-ic.cl{background:#FF9F0A}
+
+/* ── 更新页进度条 ─────────────────────────────────────────── */
+.prog{height:4px;border-radius:2px;background:var(--tertiary-system-fill);overflow:hidden;margin-top:10px}
+.prog i{display:block;height:100%;width:0;background:var(--accent);border-radius:2px;transition:width .35s linear}
+
+
+/* ── 「和它说话」内联入口（小功能，不抢主界面的戏） ─────────── */
+.talk-entry{
+  display:flex;align-items:center;gap:11px;width:100%;
+  border:0;cursor:pointer;text-align:left;
+  padding:11px 14px;border-radius:14px;
+  background:var(--accent-soft);
+  transition:transform .12s var(--e-standard),filter .16s var(--e-standard);
+}
+.talk-entry:active{transform:scale(.985);filter:brightness(.96)}
+.talk-ic{
+  width:30px;height:30px;border-radius:15px;flex:none;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--accent);color:var(--on-accent);
+}
+.talk-ic .ic{width:17px;height:17px}
+.talk-txt{flex:1;font-size:15.5px;font-weight:600;letter-spacing:-.3px;color:var(--accent)}
+.talk-entry .chev{color:var(--accent);opacity:.55}
+.joy-knob{box-shadow:0 3px 10px rgba(0,0,0,.24),0 1px 2px rgba(0,0,0,.18),inset 0 0 0 .5px rgba(0,0,0,.10)}
+
+</style>
+</head>
+<body>
+  <div class="scheme-switcher" id="scheme-switcher" role="group" aria-label="视觉方案切换">
+      <button type="button" data-scheme-btn="paper-terracotta" style="background:#AF4C37" data-label="纸感陶土" aria-label="切换到纸感陶土" aria-pressed="false"></button>
+      <button type="button" data-scheme-btn="pure-white-blank" style="background:#B74332" data-label="纯白留白" aria-label="切换到纯白留白" aria-pressed="false"></button>
+      <button type="button" data-scheme-btn="warm-paper-serif" style="background:#9E3B26" data-label="暖纸衬线" aria-label="切换到暖纸衬线" aria-pressed="false"></button>
+      <button type="button" data-scheme-btn="tuck-dark-calm" style="background:#E3A857" data-label="深色静谧" aria-label="切换到深色静谧" aria-pressed="false"></button>
+  </div>
+
+<div class="device">
+  <div class="screen" id="screen">
+
+    <!-- 图标定义：SF Symbols 风格内联 SVG（DESIGN.md §6：禁 emoji 充当图标） -->
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+      <symbol id="i-face" viewBox="0 0 24 24">
+        <path fill="currentColor" fill-rule="evenodd" d="M12 2.5c5.25 0 9.5 3.95 9.5 8.8s-4.25 8.8-9.5 8.8S2.5 16.15 2.5 11.3 6.75 2.5 12 2.5Zm-2.85 6.6a1.35 1.35 0 1 0 0 2.7 1.35 1.35 0 0 0 0-2.7Zm5.7 0a1.35 1.35 0 1 0 0 2.7 1.35 1.35 0 0 0 0-2.7ZM6.6 14.9c1.2 2.2 3.1 3.5 5.4 3.5s4.2-1.3 5.4-3.5c.4-.7-.4-1.5-1.1-1.1-1 .5-2 .8-2.6.9-.6.2-1.1.3-1.7.3s-1.1-.1-1.7-.3c-.6-.1-1.6-.4-2.6-.9-.7-.4-1.5.4-1.1 1.1Z"/>
+      </symbol>
+      <symbol id="i-gear" viewBox="0 0 24 24">
+        <path fill="currentColor" fill-rule="evenodd" d="M18.87 10.66 L21.65 10.98 L21.65 13.02 L18.87 13.34 L17.8 15.91 L19.54 18.1 L18.1 19.54 L15.91 17.8 L13.34 18.87 L13.02 21.65 L10.98 21.65 L10.66 18.87 L8.09 17.8 L5.9 19.54 L4.46 18.1 L6.2 15.91 L5.13 13.34 L2.35 13.02 L2.35 10.98 L5.13 10.66 L6.2 8.09 L4.46 5.9 L5.9 4.46 L8.09 6.2 L10.66 5.13 L10.98 2.35 L13.02 2.35 L13.34 5.13 L15.91 6.2 L18.1 4.46 L19.54 5.9 L17.8 8.09 Z M8.4 12 A3.6 3.6 0 1 0 15.6 12 A3.6 3.6 0 1 0 8.4 12 Z"/>
+      </symbol>
+      <symbol id="i-chev-right" viewBox="0 0 8 14">
+        <path d="M2 1.4 6.2 7 2 12.6" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
+      </symbol>
+      <symbol id="i-chev-left" viewBox="0 0 8 14">
+        <path d="M6 1.4 1.8 7 6 12.6" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
+      </symbol>
+      <symbol id="i-wave" viewBox="0 0 24 24">
+        <g fill="currentColor">
+          <rect x="2.6" y="9.4" width="2.3" height="5.2" rx="1.15"/>
+          <rect x="7.1" y="5.8" width="2.3" height="12.4" rx="1.15"/>
+          <rect x="11.6" y="2.8" width="2.3" height="18.4" rx="1.15"/>
+          <rect x="16.1" y="7.4" width="2.3" height="8.8" rx="1.15"/>
+          <rect x="20.6" y="10.2" width="2.3" height="3.6" rx="1.15"/>
+        </g>
+      </symbol>
+      <symbol id="i-photo-stack" viewBox="0 0 24 24">
+        <rect x="6.6" y="3.4" width="14" height="14" rx="3.4" fill="none" stroke="currentColor" stroke-width="1.9"/>
+        <path d="M3.6 7.6v9.2a3.8 3.8 0 0 0 3.8 3.8h8.4" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+      </symbol>
+      <symbol id="i-mic" viewBox="0 0 24 24">
+        <rect x="9" y="2.6" width="6" height="11.4" rx="3" fill="currentColor"/>
+        <path d="M5.4 11.4a6.6 6.6 0 0 0 13.2 0" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+        <path d="M12 18v3.4" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+      </symbol>
+      <symbol id="i-arrow-up" viewBox="0 0 24 24">
+        <path d="M12 19.2V5.4M6.2 11.2 12 5.4l5.8 5.8" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </symbol>
+      <symbol id="i-check" viewBox="0 0 18 18">
+        <path d="M3.6 9.4 7.2 13 14.4 4.8" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </symbol>
+      <symbol id="i-cellular" viewBox="0 0 18 12">
+        <g fill="currentColor">
+          <rect x="0" y="7.8" width="3" height="4.2" rx="1"/>
+          <rect x="5" y="5.4" width="3" height="6.6" rx="1"/>
+          <rect x="10" y="2.9" width="3" height="9.1" rx="1"/>
+          <rect x="15" y="0.4" width="3" height="11.6" rx="1"/>
+        </g>
+      </symbol>
+      <symbol id="i-wifi" viewBox="0 0 17 12">
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+          <path d="M1 3.6a11 11 0 0 1 15 0"/>
+          <path d="M3.7 6.5a7.2 7.2 0 0 1 9.6 0"/>
+          <path d="M6.3 9.2a3.5 3.5 0 0 1 4.4 0"/>
+        </g>
+      </symbol>
+      <symbol id="i-battery" viewBox="0 0 27 13">
+        <rect x="0.7" y="0.7" width="22" height="11.6" rx="3.4" fill="none" stroke="currentColor" stroke-opacity="0.38" stroke-width="1.1"/>
+        <path d="M24.4 4.4v4.2c1-.35 1.6-1.1 1.6-2.1s-.6-1.75-1.6-2.1Z" fill="currentColor" fill-opacity="0.38"/>
+        <rect x="2.4" y="2.4" width="11" height="8.2" rx="2.1" fill="currentColor"/>
+      </symbol>
+      <symbol id="i-stick" viewBox="0 0 24 24">
+        <rect x="2.4" y="2.4" width="19.2" height="19.2" rx="5.6" fill="none" stroke="currentColor" stroke-width="1.8"/>
+        <circle cx="12" cy="12" r="4.1" fill="currentColor"/>
+      </symbol>
+      <symbol id="i-bolt" viewBox="0 0 24 24">
+        <path d="M13.4 2.6 4.9 13.2h5.5l-.8 8.2 8.5-10.6h-5.5l.8-8.2Z" fill="currentColor"/>
+      </symbol>
+      <symbol id="i-bluetooth" viewBox="0 0 24 24">
+        <path d="M7.6 7.3 16.4 16.4 12 20.2V3.8l4.4 3.8L7.6 16.7" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+      </symbol>
+      <symbol id="i-refresh" viewBox="0 0 24 24">
+        <path d="M20.2 12a8.2 8.2 0 1 1-2.6-6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+        <path d="M20.4 4.2v5.2h-5.2" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+      </symbol>
+      <symbol id="i-download" viewBox="0 0 24 24">
+        <path d="M12 3.6v11.2M7.6 10.6 12 15l4.4-4.4" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M4.4 17.2v1.6a1.8 1.8 0 0 0 1.8 1.8h11.6a1.8 1.8 0 0 0 1.8-1.8v-1.6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+      </symbol>
+      <symbol id="i-cloud" viewBox="0 0 24 24">
+        <path d="M7.2 18.4a4.2 4.2 0 0 1-.4-8.4 5.2 5.2 0 0 1 10-1.2 3.8 3.8 0 0 1-.6 9.6H7.2Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+      </symbol>
+      <symbol id="i-chat" viewBox="0 0 24 24">
+        <path d="M12 4.2c4.6 0 8.3 3 8.3 6.8s-3.7 6.8-8.3 6.8c-.9 0-1.8-.1-2.6-.3l-4.6 1.9 1.4-3.6c-1.5-1.2-2.5-2.9-2.5-4.8 0-3.8 3.7-6.8 8.3-6.8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+      </symbol>
+      <symbol id="i-nod" viewBox="0 0 24 24">
+        <path d="M4.6 9.4h14.8M7.2 13.6h9.6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+        <path d="M12 4.2v2.6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+      </symbol>
+      <symbol id="i-shake" viewBox="0 0 24 24">
+        <path d="M12 4.4v15.2" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+        <path d="M8.4 7.6 4.8 12l3.6 4.4M15.6 7.6 19.2 12l-3.6 4.4" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+      </symbol>
+      <symbol id="i-spin" viewBox="0 0 24 24">
+        <path d="M20 12a8 8 0 1 1-2.4-5.7" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+        <path d="M20.2 3.6v4.8h-4.8" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+      </symbol>
+      <symbol id="i-dance" viewBox="0 0 24 24">
+        <circle cx="9.2" cy="4.8" r="1.9" fill="currentColor"/>
+        <path d="M9.2 8.2v5.4l3.4 2.4.9 4.4M9.2 13.6l-3 2.2-1.5 4.4M9.2 9.4l4.6 1.2 2.8-1.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </symbol>
+      <symbol id="i-checkmark-circle" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="8.8" fill="none" stroke="currentColor" stroke-width="1.8"/>
+        <path d="M8.2 12.2 10.8 14.8l5-5.4" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+      </symbol>
+    </svg>
+
+    <!-- 状态栏 -->
+    <div class="statusbar">
+      <div class="sb-time" id="clock">9:41</div>
+      <div class="sb-right">
+        <svg class="sb-ic sb-cellular"><use href="#i-cellular"></use></svg>
+        <svg class="sb-ic sb-wifi"><use href="#i-wifi"></use></svg>
+        <svg class="sb-ic sb-battery"><use href="#i-battery"></use></svg>
+      </div>
+    </div>
+    <div class="island"></div>
+
+    <!-- 导航栈 -->
+    <div id="stack">
+
+      <!-- ① 控制（Tab 根页 · 主界面=舵机控制台） -->
+      <section class="page active" id="p-control" data-tab="control" data-depth="0">
+        <div class="page-dim"></div>
+        <header class="navbar">
+          <div class="nav-row">
+            <div class="nav-leading"></div>
+            <div class="nav-title-small">小栈</div>
+            <div class="nav-trailing">
+              <button class="nav-btn press" data-push="p-connection" aria-label="设备连接">
+                <svg class="ic"><use href="#i-bluetooth"></use></svg>
+              </button>
+            </div>
+          </div>
+        </header>
+        <div class="scroll">
+          <div class="page-pad">
+            <div class="device-card">
+              <svg class="face" id="face" viewBox="0 0 320 240" role="img" aria-label="小栈的脸"></svg>
+              <div class="device-ov">
+                <div class="l"><span class="live-dot"></span><span>已连接</span></div>
+                <div class="ov-sig" id="ov-sig" aria-label="身体信号灯：左右各 6 颗 RGB LED"></div>
+                <div class="r"><span>电量 82%</span><span>·</span><span>1.0.0</span></div>
+              </div>
+            </div>
+            <div class="status-line" style="padding-top:12px">
+              <span class="status-chip" id="face-mood">在看你</span>
+              <span class="status-chip" id="face-look">朝正前方</span>
+            </div>
+            <button class="talk-entry press" data-push="p-chat">
+              <span class="talk-ic"><svg class="ic"><use href="#i-chat"></use></svg></span>
+              <span class="talk-txt">和它说话</span>
+              <svg class="chev"><use href="#i-chev-right"></use></svg>
+            </button>
+
+            <div class="group-wrap">
+              <div class="group-header">舵机</div>
+              <div class="group">
+                <div class="joy-row">
+                  <div class="joy-pad" id="joy">
+                    <div class="joy-cross"></div>
+                    <div class="joy-knob" id="joy-knob"></div>
+                  </div>
+                  <div class="joy-read">
+                    <div class="joy-vals">
+                      <div class="joy-val"><span>水平</span><b id="joy-x">0°</b></div>
+                      <div class="joy-val"><span>垂直</span><b id="joy-y">0°</b></div>
+                    </div>
+                    <button class="joy-reset press" id="joy-reset">回正</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="group-header">表情</div>
+              <div class="group">
+                <div class="chip-row" id="emo-row">
+                  <button class="chip" data-emo="idle" aria-selected="true">平静</button>
+                  <button class="chip" data-emo="happy" aria-selected="false">开心</button>
+                  <button class="chip" data-emo="excited" aria-selected="false">兴奋</button>
+                  <button class="chip" data-emo="surprised" aria-selected="false">惊讶</button>
+                  <button class="chip" data-emo="sleepy" aria-selected="false">困倦</button>
+                  <button class="chip" data-emo="cross" aria-selected="false">生气</button>
+                </div>
+              </div>
+
+              <div class="group-header">动作</div>
+              <div class="group">
+                <div class="act-row">
+                  <button class="act press" data-act="nod"><svg class="ic"><use href="#i-nod"></use></svg><span>点头</span></button>
+                  <button class="act press" data-act="shake"><svg class="ic"><use href="#i-shake"></use></svg><span>摇头</span></button>
+                  <button class="act press" data-act="spin"><svg class="ic"><use href="#i-spin"></use></svg><span>转圈</span></button>
+                  <button class="act press" data-act="dance"><svg class="ic"><use href="#i-dance"></use></svg><span>跳舞</span></button>
+                </div>
+              </div>
+            </div>
+
+            <div style="height:152px"></div>
+          </div>
+        </div>
+      </section>
+      <!-- ② 对话详情（陪伴 → push） -->
+      <section class="page has-large" id="p-chat" data-tab="control" data-depth="1">
+        <div class="page-dim"></div>
+        <header class="navbar">
+          <div class="nav-row">
+            <div class="nav-leading">
+              <button class="nav-back press" data-back>
+                <svg class="chev-back"><use href="#i-chev-left"></use></svg><span>小栈</span>
+              </button>
+            </div>
+            <div class="nav-title-small">对话</div>
+            <div class="nav-trailing">
+              <button class="nav-btn press" data-push="p-memories" aria-label="共同回忆">
+                <svg class="ic"><use href="#i-photo-stack"></use></svg>
+              </button>
+            </div>
+          </div>
+        </header>
+        <div class="scroll">
+          <h1 class="large-title">对话</h1>
+          <div class="page-pad">
+            <div class="thread" id="thread-chat">
+              <div class="sys-event">08:12 · 小栈已连接</div>
+              <div class="bubble in">你今天回来得比昨天早。</div>
+              <div class="bubble out">在等我？</div>
+              <div class="bubble in">等了 23 分钟。不算久。</div>
+              <div class="sys-event">08:19 · 小栈有点困了</div>
+              <div class="bubble in">……我先眯一会儿。你叫我。</div>
+              <div class="bubble out">叫你了。</div>
+            </div>
+          </div>
+          <div style="height:72px"></div>
+        </div>
+        <div class="composer">
+          <div class="composer-shell">
+            <input class="composer-input" id="input-chat" type="text" placeholder="说点什么" autocomplete="off">
+            <button class="composer-btn mic press" id="mic-chat" aria-label="语音输入">
+              <svg class="ic"><use href="#i-mic"></use></svg>
+            </button>
+            <button class="composer-btn send press" id="send-chat" aria-label="发送">
+              <svg class="ic"><use href="#i-arrow-up"></use></svg>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ③ 共同回忆（对话详情 → push，深度 3） -->
+      <section class="page has-large" id="p-memories" data-tab="control" data-depth="2">
+        <div class="page-dim"></div>
+        <header class="navbar">
+          <div class="nav-row">
+            <div class="nav-leading">
+              <button class="nav-back press" data-back>
+                <svg class="chev-back"><use href="#i-chev-left"></use></svg><span>对话</span>
+              </button>
+            </div>
+            <div class="nav-title-small">共同回忆</div>
+            <div class="nav-trailing"></div>
+          </div>
+        </header>
+        <div class="scroll">
+          <h1 class="large-title">共同回忆</h1>
+          <div class="group-wrap">
+            <div class="group-header">最近</div>
+            <div class="group">
+              <div class="row"><span class="row-label">昨天</span><span class="row-value">你说想早点睡</span></div>
+              <div class="row"><span class="row-label">前天</span><span class="row-value">一起听了很久</span></div>
+              <div class="row"><span class="row-label">上周</span><span class="row-value">你教我写字</span></div>
+            </div>
+            <div class="group-header">更早</div>
+            <div class="group">
+              <div class="row"><span class="row-label">第一次见面</span><span class="row-value">你叫了我的名字</span></div>
+            </div>
+          </div>
+          <div style="height:64px"></div>
+        </div>
+      </section>
+
+      <!-- ④ 设置（Tab 根页） -->
+      <section class="page has-large" id="p-settings" data-tab="settings" data-depth="0">
+        <div class="page-dim"></div>
+        <header class="navbar">
+          <div class="nav-row">
+            <div class="nav-leading"></div>
+            <div class="nav-title-small">设置</div>
+            <div class="nav-trailing"></div>
+          </div>
+        </header>
+        <div class="scroll">
+          <h1 class="large-title">设置</h1>
+          <div class="group-wrap">
+            <div class="group-header">设备</div>
+            <div class="group">
+              <button class="row row-tap press" data-push="p-connection">
+                <span class="row-ic bt"><svg class="ic"><use href="#i-bluetooth"></use></svg></span>
+                <span class="row-label">连接</span>
+                <span class="row-value">已连接</span>
+                <svg class="chev"><use href="#i-chev-right"></use></svg>
+              </button>
+              <button class="row row-tap press" data-push="p-update">
+                <span class="row-ic up"><svg class="ic"><use href="#i-download"></use></svg></span>
+                <span class="row-label">更新</span>
+                <span class="row-value">App 1.0.0 · 固件 1.0.0</span>
+                <svg class="chev"><use href="#i-chev-right"></use></svg>
+              </button>
+              <button class="row row-tap press" data-sheet="voice">
+                <span class="row-ic cl"><svg class="ic"><use href="#i-wave"></use></svg></span>
+                <span class="row-label">语音与音量</span>
+                <svg class="chev"><use href="#i-chev-right"></use></svg>
+              </button>
+              <div class="row">
+                <span class="row-label">静音</span>
+                <button class="switch" data-switch role="switch" aria-checked="false" aria-label="静音"><span class="knob"></span></button>
+              </div>
+            </div>
+
+            <div class="group-header">网络</div>
+            <div class="group">
+              <button class="row row-tap press" data-push="p-network">
+                <span class="row-ic wf"><svg class="ic"><use href="#i-wifi"></use></svg></span>
+                <span class="row-label">Wi-Fi</span>
+                <span class="row-value">Studio 5G</span>
+                <svg class="chev"><use href="#i-chev-right"></use></svg>
+              </button>
+              <div class="row">
+                <span class="row-label">云端服务</span>
+                <span class="row-value">已连接 · 上海</span>
+              </div>
+              <div class="row">
+                <span class="row-label">本地推理</span>
+                <button class="switch" data-switch role="switch" aria-checked="false" aria-label="本地推理"><span class="knob"></span></button>
+              </div>
+            </div>
+
+            <div class="group-header">陪伴</div>
+            <div class="group">
+              <div class="row">
+                <span class="row-label">主动性</span>
+                <button class="switch" data-switch role="switch" aria-checked="true" aria-label="主动性"><span class="knob"></span></button>
+              </div>
+              <div class="row">
+                <span class="row-label">记住我的事</span>
+                <button class="switch" data-switch role="switch" aria-checked="false" aria-label="记住我的事"><span class="knob"></span></button>
+              </div>
+              <div class="row">
+                <span class="row-label">充电时自动亮屏</span>
+                <button class="switch" data-switch role="switch" aria-checked="true" aria-label="充电时自动亮屏"><span class="knob"></span></button>
+              </div>
+            </div>
+
+            <div class="group-header">通用</div>
+            <div class="group">
+              <button class="row row-tap press" data-push="p-notif">
+                <span class="row-label">通知</span>
+                <svg class="chev"><use href="#i-chev-right"></use></svg>
+              </button>
+              <button class="row row-tap press" data-push="p-about">
+                <span class="row-label">关于</span>
+                <svg class="chev"><use href="#i-chev-right"></use></svg>
+              </button>
+            </div>
+          </div>
+          <div style="height:104px"></div>
+        </div>
+      </section>
+      <!-- ④-b 设备连接（设置 → push） -->
+      <section class="page has-large" id="p-connection" data-tab="settings" data-depth="1">
+        <div class="page-dim"></div>
+        <header class="navbar">
+          <div class="nav-row">
+            <div class="nav-leading">
+              <button class="nav-back press" data-back>
+                <svg class="chev-back"><use href="#i-chev-left"></use></svg><span>设置</span>
+              </button>
+            </div>
+            <div class="nav-title-small">连接</div>
+            <div class="nav-trailing"></div>
+          </div>
+        </header>
+        <div class="scroll">
+          <h1 class="large-title">连接</h1>
+          <div class="group-wrap">
+            <div class="group-header">小栈</div>
+            <div class="group">
+              <div class="row"><span class="row-label">状态</span><span class="row-value" style="color:var(--system-green)">已连接</span></div>
+              <div class="row"><span class="row-label">信号</span><span class="row-value">强</span></div>
+              <div class="row"><span class="row-label">电量</span><span class="row-value">82%</span></div>
+              <div class="row"><span class="row-label">固件版本</span><span class="row-value">1.0.0</span></div>
+            </div>
+            <div class="group-header">操作</div>
+            <div class="group">
+              <button class="row row-tap press" id="btn-reconnect">
+                <span class="row-label" style="color:var(--accent)">重新连接</span>
+                <svg class="chev"><use href="#i-chev-right"></use></svg>
+              </button>
+              <button class="row row-tap press" id="btn-disconnect">
+                <span class="row-label" style="color:var(--system-red)">断开连接</span>
+                <svg class="chev"><use href="#i-chev-right"></use></svg>
+              </button>
+            </div>
+            <div class="group-header">舵机校准</div>
+            <div class="group">
+              <div class="row"><span class="row-label">状态</span><span class="row-value" id="calib">未校准</span></div>
+              <button class="row row-tap press" id="calib-btn">
+                <span class="row-label" style="color:var(--accent)">重新校准舵机</span>
+                <svg class="chev"><use href="#i-chev-right"></use></svg>
+              </button>
+            </div>
+          </div>
+          <div style="height:104px"></div>
+        </div>
+      </section>
+
+      <!-- ④-c 更新（设置 → push） -->
+      <section class="page has-large" id="p-update" data-tab="settings" data-depth="1">
+        <div class="page-dim"></div>
+        <header class="navbar">
+          <div class="nav-row">
+            <div class="nav-leading">
+              <button class="nav-back press" data-back>
+                <svg class="chev-back"><use href="#i-chev-left"></use></svg><span>设置</span>
+              </button>
+            </div>
+            <div class="nav-title-small">更新</div>
+            <div class="nav-trailing"></div>
+          </div>
+        </header>
+        <div class="scroll">
+          <h1 class="large-title">更新</h1>
+          <div class="group-wrap">
+            <div class="group-header">App</div>
+            <div class="group">
+              <div class="row"><span class="row-label">当前版本</span><span class="row-value">1.0.0</span></div>
+              <div class="row"><span class="row-label">最新版本</span><span class="row-value" id="up-app">1.0.0</span></div>
+              <button class="row row-tap press" id="btn-check-app">
+                <span class="row-label" style="color:var(--accent)">检查 App 更新</span>
+                <svg class="chev"><use href="#i-chev-right"></use></svg>
+              </button>
+            </div>
+            <div class="group-header">设备固件</div>
+            <div class="group">
+              <div class="row"><span class="row-label">当前版本</span><span class="row-value">1.0.0</span></div>
+              <div class="row"><span class="row-label">最新版本</span><span class="row-value" id="up-fw">1.0.0</span></div>
+              <button class="row row-tap press" id="btn-check-fw">
+                <span class="row-label" style="color:var(--accent)">检查固件更新</span>
+                <svg class="chev"><use href="#i-chev-right"></use></svg>
+              </button>
+              <div style="padding:0 16px 14px" id="up-prog-wrap" hidden>
+                <div class="prog"><i id="up-prog"></i></div>
+              </div>
+            </div>
+            <div class="group-header">说明</div>
+            <div class="group">
+              <div class="row" style="align-items:flex-start;padding:12px 16px">
+                <span class="row-label" style="color:var(--secondary-label);font-size:13px;line-height:19px">
+                  固件更新前会先做 16 MB 全量备份；官方固件只读不 fork，App 侧只调用官方升级通道，不改写固件镜像。
+                </span>
+              </div>
+            </div>
+          </div>
+          <div style="height:104px"></div>
+        </div>
+      </section>
+
+      <!-- ④-d 网络（设置 → push） -->
+      <section class="page has-large" id="p-network" data-tab="settings" data-depth="1">
+        <div class="page-dim"></div>
+        <header class="navbar">
+          <div class="nav-row">
+            <div class="nav-leading">
+              <button class="nav-back press" data-back>
+                <svg class="chev-back"><use href="#i-chev-left"></use></svg><span>设置</span>
+              </button>
+            </div>
+            <div class="nav-title-small">网络</div>
+            <div class="nav-trailing"></div>
+          </div>
+        </header>
+        <div class="scroll">
+          <h1 class="large-title">网络</h1>
+          <div class="group-wrap">
+            <div class="group-header">Wi-Fi</div>
+            <div class="group">
+              <div class="row"><span class="row-label">当前网络</span><span class="row-value">Studio 5G</span></div>
+              <div class="row"><span class="row-label">信号</span><span class="row-value">强</span></div>
+              <div class="row"><span class="row-label">IP 地址</span><span class="row-value">192.168.1.24</span></div>
+              <button class="row row-tap press"><span class="row-label" style="color:var(--accent)">选择其他网络</span><svg class="chev"><use href="#i-chev-right"></use></svg></button>
+            </div>
+            <div class="group-header">云端</div>
+            <div class="group">
+              <div class="row"><span class="row-label">服务区域</span><span class="row-value">上海</span></div>
+              <div class="row"><span class="row-label">连接状态</span><span class="row-value" style="color:var(--system-green)">已连接</span></div>
+              <div class="row"><span class="row-label">端点</span><span class="row-value">api.minimaxi.com</span></div>
+            </div>
+            <div class="group-header">高级</div>
+            <div class="group">
+              <div class="row">
+                <span class="row-label">代理</span>
+                <button class="switch" data-switch role="switch" aria-checked="false" aria-label="代理"><span class="knob"></span></button>
+              </div>
+              <div class="row"><span class="row-label">自定义端点</span><span class="row-value">—</span></div>
+            </div>
+          </div>
+          <div style="height:104px"></div>
+        </div>
+      </section>
+
+      <!-- ⑤ 通知设置（设置 → push） -->
+      <section class="page has-large" id="p-notif" data-tab="settings" data-depth="1">
+        <div class="page-dim"></div>
+        <header class="navbar">
+          <div class="nav-row">
+            <div class="nav-leading">
+              <button class="nav-back press" data-back>
+                <svg class="chev-back"><use href="#i-chev-left"></use></svg><span>设置</span>
+              </button>
+            </div>
+            <div class="nav-title-small">通知</div>
+            <div class="nav-trailing"></div>
+          </div>
+        </header>
+        <div class="scroll">
+          <h1 class="large-title">通知</h1>
+          <div class="group-wrap">
+            <div class="group-header">允许</div>
+            <div class="group">
+              <div class="row">
+                <span class="row-label">小栈想说话时</span>
+                <button class="switch" data-switch role="switch" aria-checked="true" aria-label="小栈想说话时"><span class="knob"></span></button>
+              </div>
+              <div class="row">
+                <span class="row-label">久未互动</span>
+                <button class="switch" data-switch role="switch" aria-checked="false" aria-label="久未互动"><span class="knob"></span></button>
+              </div>
+            </div>
+            <div class="group-header">免打扰</div>
+            <div class="group">
+              <div class="row">
+                <span class="row-label">夜间免打扰</span>
+                <button class="switch" data-switch role="switch" aria-checked="true" aria-label="夜间免打扰"><span class="knob"></span></button>
+              </div>
+            </div>
+          </div>
+          <div style="height:64px"></div>
+        </div>
+      </section>
+
+      <!-- ⑥ 关于（设置 → 通知 → 关于，深度 3） -->
+      <section class="page has-large" id="p-about" data-tab="settings" data-depth="2">
+        <div class="page-dim"></div>
+        <header class="navbar">
+          <div class="nav-row">
+            <div class="nav-leading">
+              <button class="nav-back press" data-back>
+                <svg class="chev-back"><use href="#i-chev-left"></use></svg><span>通知</span>
+              </button>
+            </div>
+            <div class="nav-title-small">关于</div>
+            <div class="nav-trailing"></div>
+          </div>
+        </header>
+        <div class="scroll">
+          <h1 class="large-title">关于</h1>
+          <div class="group-wrap">
+            <div class="group-header">小栈</div>
+            <div class="group">
+              <div class="row"><span class="row-label">版本</span><span class="row-value">1.0.0</span></div>
+              <div class="row"><span class="row-label">舵机校准</span><span class="row-value" id="calib">未校准</span></div>
+              <button class="row row-tap press" id="calib-btn">
+                <span class="row-label" style="color:var(--system-red)">重新校准舵机</span>
+                <svg class="chev"><use href="#i-chev-right"></use></svg>
+              </button>
+            </div>
+          </div>
+          <div style="height:64px"></div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- 标签栏：2 个 Tab，浮动毛玻璃条 -->
+    <nav class="tabbar" id="tabbar" role="tablist">
+      <button class="tab-item press" data-tab-target="control" role="tab" aria-selected="true">
+        <svg class="ic"><use href="#i-stick"></use></svg>
+        <span class="tab-label">控制</span>
+      </button>
+      <button class="tab-item press" data-tab-target="settings" role="tab" aria-selected="false">
+        <svg class="ic"><use href="#i-gear"></use></svg>
+        <span class="tab-label">设置</span>
+      </button>
+    </nav>
+    <div class="hud" id="hud" role="status" aria-live="polite"></div>
+
+    <div class="home-indicator"></div>
+
+    <!-- Sheet -->
+    <div class="scrim" id="scrim"></div>
+    <section class="sheet" id="sheet" role="dialog" aria-label="语音与音量">
+      <div class="sheet-grabber"></div>
+      <div class="sheet-head">
+        <span class="sheet-title">语音与音量</span>
+        <button class="sheet-done" id="sheet-done">完成</button>
+      </div>
+      <div class="sheet-body" id="sheet-body">
+        <div class="group-wrap">
+          <div class="group-header">音量</div>
+          <div class="group">
+            <div class="row" style="padding:8px 16px">
+              <div class="seg" role="tablist" style="width:100%">
+                <button role="tab" aria-selected="false" class="press">低</button>
+                <button role="tab" aria-selected="true" class="press">中</button>
+                <button role="tab" aria-selected="false" class="press">高</button>
+              </div>
+            </div>
+          </div>
+          <div class="group-header">主动</div>
+          <div class="group">
+            <div class="row">
+              <span class="row-label">小栈先开口</span>
+              <button class="switch" data-switch role="switch" aria-checked="true" aria-label="小栈先开口"><span class="knob"></span></button>
+            </div>
+            <div class="row">
+              <span class="row-label">安静时段</span>
+              <button class="switch" data-switch role="switch" aria-checked="false" aria-label="安静时段"><span class="knob"></span></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var screenEl = document.getElementById('screen');
+  var tabbar = document.getElementById('tabbar');
+  var scrim = document.getElementById('scrim');
+  var sheet = document.getElementById('sheet');
+  var sheetBody = document.getElementById('sheet-body');
+  var clock = document.getElementById('clock');
+
+  var pages = {};
+  Array.prototype.forEach.call(document.querySelectorAll('.page'), function (p) { pages[p.id] = p; });
+
+  var stacks = { control: ['p-control'], settings: ['p-settings'] };
+  var activeTab = 'control';
+  var sheetOpen = false;
+  var suppressClick = false;
+
+  function topId(tab) { return stacks[tab][stacks[tab].length - 1]; }
+  function pageOf(id) { return pages[id]; }
+
+  /* ── 状态栏时间 ───────────────────────────────────────────── */
+  function tickClock() {
+    var d = new Date();
+    var h = d.getHours() % 12; if (h === 0) { h = 12; }
+    var m = d.getMinutes();
+    clock.textContent = h + ':' + (m < 10 ? '0' : '') + m;
+  }
+  tickClock();
+  window.setInterval(tickClock, 20000);
+
+
+  /* ── 舵机摇杆（双轴）：拖动 = 实时转舵机，脸跟着转 ───────── */
+  var joy = document.getElementById('joy');
+  var knob = document.getElementById('joy-knob');
+  var joyX = document.getElementById('joy-x');
+  var joyY = document.getElementById('joy-y');
+  var lookLabel = document.getElementById('face-look');
+  var servoX = 0, servoY = 0, joyDrag = false;
+
+  function applyServo() {
+    knob.style.transform = 'translate(calc(-50% + ' + (servoX * 41) + 'px), calc(-50% + ' + (-servoY * 41) + 'px))';
+    joyX.textContent = (servoX > 0 ? '+' : '') + Math.round(servoX * 30) + '°';
+    joyY.textContent = (servoY > 0 ? '+' : '') + Math.round(servoY * 30) + '°';
+    /* 水平舵机 = 眼旋转（固件 eyeRot），范围映射到 ±15° */
+    var f = FACES[FACE_ORDER[faceIdx]];
+    f.eyeRot = Math.round(servoX * 15);
+    drawFace();
+    var dir = servoX < -0.18 ? '偏左' : (servoX > 0.18 ? '偏右' : '朝正前方');
+    var up = servoY > 0.18 ? ' · 抬头' : (servoY < -0.18 ? ' · 低头' : '');
+    if (lookLabel) { lookLabel.textContent = dir + up; }
+  }
+  function joyFromEvent(e) {
+    var r = joy.getBoundingClientRect();
+    var cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    var dx = (e.clientX - cx) / (r.width / 2 - 22);
+    var dy = (e.clientY - cy) / (r.height / 2 - 22);
+    servoX = Math.max(-1, Math.min(1, dx));
+    servoY = Math.max(-1, Math.min(1, -dy));
+    applyServo();
+  }
+  joy.addEventListener('pointerdown', function (e) {
+    joyDrag = true; joy.classList.add('dragging'); joy.setPointerCapture(e.pointerId);
+    joyFromEvent(e); e.preventDefault();
+  });
+  joy.addEventListener('pointermove', function (e) { if (joyDrag) { joyFromEvent(e); } });
+  function joyEnd() { joyDrag = false; joy.classList.remove('dragging'); }
+  joy.addEventListener('pointerup', joyEnd);
+  joy.addEventListener('pointercancel', joyEnd);
+  document.getElementById('joy-reset').addEventListener('click', function () {
+    servoX = 0; servoY = 0; applyServo(); showHud('已回正');
+  });
+
+  /* ── 表情切换 ──────────────────────────────────────────── */
+  Array.prototype.forEach.call(document.querySelectorAll('#emo-row .chip'), function (c) {
+    c.addEventListener('click', function () {
+      Array.prototype.forEach.call(c.parentNode.children, function (b) { b.setAttribute('aria-selected', 'false'); });
+      c.setAttribute('aria-selected', 'true');
+      setFace(c.getAttribute('data-emo'));
+      showHud('表情 · ' + c.textContent);
+    });
+  });
+
+  /* ── 动作 ──────────────────────────────────────────────── */
+  var ACT_LABEL = { nod: '点头', shake: '摇头', spin: '转圈', dance: '跳舞' };
+  Array.prototype.forEach.call(document.querySelectorAll('[data-act]'), function (b) {
+    b.addEventListener('click', function () {
+      var act = b.getAttribute('data-act');
+      showHud(ACT_LABEL[act]);
+      var start = null, dur = act === 'dance' ? 1100 : 700;
+      function step(ts) {
+        if (start === null) { start = ts; }
+        var t = (ts - start) / dur;
+        if (t >= 1) { servoX = 0; servoY = 0; applyServo(); return; }
+        var phase = t * Math.PI * 4;
+        if (act === 'nod') { servoY = Math.sin(phase) * 0.55; servoX = 0; }
+        else if (act === 'shake') { servoX = Math.sin(phase) * 0.6; servoY = 0; }
+        else if (act === 'spin') { servoX = Math.sin(phase) * 0.9; servoY = 0; }
+        else { servoX = Math.sin(phase) * 0.5; servoY = Math.cos(phase * 0.5) * 0.3; }
+        applyServo();
+        window.requestAnimationFrame(step);
+      }
+      window.requestAnimationFrame(step);
+    });
+  });
+
+  /* ── HUD（iOS 底部瞬时提示） ─────────────────────────────────────────────── */
+  var hudEl = document.getElementById('hud');
+  var hudTimer = null;
+  function showHud(msg) {
+    hudEl.textContent = msg;
+    hudEl.classList.add('on');
+    window.clearTimeout(hudTimer);
+    hudTimer = window.setTimeout(function () { hudEl.classList.remove('on'); }, 1400);
+  }
+
+  /* ── 更新页：检查 App / 固件更新 ───────────────────────── */
+  function fakeCheck(btnId, targetId, label) {
+    var btn = document.getElementById(btnId);
+    if (!btn) { return; }
+    btn.addEventListener('click', function () {
+      var wrap = document.getElementById('up-prog-wrap');
+      var bar = document.getElementById('up-prog');
+      var lbl = btn.querySelector('.row-label');
+      lbl.textContent = '正在检查…';
+      lbl.style.color = 'var(--secondary-label)';
+      wrap.hidden = false;
+      bar.style.width = '0%';
+      window.setTimeout(function () { bar.style.width = '68%'; }, 40);
+      window.setTimeout(function () {
+        bar.style.width = '100%';
+        document.getElementById(targetId).textContent = '1.0.0';
+        lbl.textContent = '已是最新版本';
+        lbl.style.color = 'var(--system-green)';
+        showHud(label + ' 已是最新');
+        window.setTimeout(function () { wrap.hidden = true; }, 900);
+      }, 900);
+    });
+  }
+  fakeCheck('btn-check-app', 'up-app', 'App');
+  fakeCheck('btn-check-fw', 'up-fw', '固件');
+
+  /* ── 连接页操作 ────────────────────────────────────────── */
+  var disc = document.getElementById('btn-disconnect');
+  if (disc) { disc.addEventListener('click', function () { showHud('已断开连接'); }); }
+  var rec = document.getElementById('btn-reconnect');
+  if (rec) { rec.addEventListener('click', function () { showHud('正在重新连接…'); }); }
+
+  /* ── 触感反馈的视觉模拟（DESIGN.md §8：press 120ms / scale 0.96） ── */
+  document.addEventListener('pointerdown', function (e) {
+    var t = e.target && e.target.closest ? e.target.closest('.press') : null;
+    if (!t) { return; }
+    t.classList.add('pressed');
+    window.setTimeout(function () { t.classList.remove('pressed'); }, 120);
+  }, true);
+
+  /* ── 导航栈 push / pop ───────────────────────────────────── */
+  function push(id) {
+    var from = pageOf(topId(activeTab));
+    var to = pageOf(id);
+    if (!to) { return; }
+    stacks[activeTab].push(id);
+    to.classList.add('active', 'entering');
+    from.classList.add('under');
+    window.requestAnimationFrame(function () {
+      window.requestAnimationFrame(function () {
+        to.classList.remove('entering');
+        from.classList.remove('under');
+      });
+    });
+    syncChrome();
+  }
+
+  function pop() {
+    var tab = activeTab;
+    if (stacks[tab].length < 2) { return; }
+    var id = stacks[tab].pop();
+    var cur = pageOf(id);
+    var under = pageOf(topId(tab));
+    cur.classList.add('entering');
+    under.classList.add('under');
+    window.requestAnimationFrame(function () {
+      window.requestAnimationFrame(function () {
+        cur.classList.remove('active', 'entering');
+        under.classList.remove('under');
+      });
+    });
+    syncChrome();
+  }
+
+  /* ── 边缘右滑返回（从屏幕左缘右滑） ─────────────────────── */
+  var drag = null;
+  screenEl.addEventListener('pointerdown', function (e) {
+    if (sheetOpen) { return; }
+    if (stacks[activeTab].length < 2) { return; }
+    var r = screenEl.getBoundingClientRect();
+    if (e.clientX - r.left > 14) { return; }
+    drag = {
+      x0: e.clientX,
+      w: r.width,
+      cur: pageOf(topId(activeTab)),
+      under: pageOf(stacks[activeTab][stacks[activeTab].length - 2]),
+      dx: 0
+    };
+    drag.cur.style.transition = 'none';
+    drag.under.style.transition = 'none';
+  });
+
+  screenEl.addEventListener('pointermove', function (e) {
+    if (!drag) { return; }
+    var dx = Math.max(0, e.clientX - drag.x0);
+    drag.dx = dx;
+    var k = dx / drag.w;
+    drag.cur.style.transform = 'translateX(' + dx + 'px)';
+    drag.under.style.transform = 'scale(' + (1 - k * 0.08) + ')';
+    var dim = drag.under.querySelector('.page-dim');
+    if (dim) { dim.style.opacity = (k * 0.9).toFixed(3); }
+  });
+
+  function endDrag() {
+    if (!drag) { return; }
+    var d = drag;
+    drag = null;
+    if (d.dx > 6) { suppressClick = true; }
+    var commit = d.dx > d.w * 0.35;
+    var dim = d.under.querySelector('.page-dim');
+
+    d.cur.style.transition = 'transform 220ms cubic-bezier(0.32,0.72,0,1)';
+    d.under.style.transition = 'transform 300ms cubic-bezier(0.32,0.72,0,1)';
+
+    if (commit) {
+      d.cur.style.transform = 'translateX(100%)';
+      d.under.style.transform = 'scale(1)';
+      if (dim) { dim.style.opacity = '0'; }
+      stacks[activeTab].pop();
+      window.setTimeout(function () {
+        d.cur.style.transition = ''; d.cur.style.transform = '';
+        d.cur.classList.remove('active');
+        d.under.style.transition = ''; d.under.style.transform = '';
+        if (dim) { dim.style.opacity = ''; }
+        syncChrome();
+      }, 240);
+    } else {
+      d.cur.style.transform = 'translateX(0)';
+      d.under.style.transform = 'scale(1)';
+      if (dim) { dim.style.opacity = ''; }
+      window.setTimeout(function () {
+        d.cur.style.transition = ''; d.cur.style.transform = '';
+        d.under.style.transition = ''; d.under.style.transform = '';
+      }, 240);
+    }
+  }
+  screenEl.addEventListener('pointerup', endDrag);
+  screenEl.addEventListener('pointercancel', endDrag);
+
+  /* ── Tab 切换（iOS 行为：无转场动画，瞬间切换） ─────────── */
+  function syncTabs() {
+    Array.prototype.forEach.call(document.querySelectorAll('[data-tab-target]'), function (btn) {
+      btn.setAttribute('aria-selected', btn.getAttribute('data-tab-target') === activeTab ? 'true' : 'false');
+    });
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('[data-tab-target]'), function (btn) {
+    btn.addEventListener('click', function () {
+      var tab = btn.getAttribute('data-tab-target');
+      if (tab === activeTab) { return; }
+      var oldTop = pageOf(topId(activeTab));
+      var newTop = pageOf(topId(tab));
+      oldTop.classList.remove('active');
+      newTop.classList.add('active');
+      activeTab = tab;
+      syncTabs();
+      syncChrome();
+    });
+  });
+
+  /* ── Sheet 开合 + 下滑关闭 ───────────────────────────────── */
+  function openSheet() {
+    sheetOpen = true;
+    scrim.classList.add('on');
+    sheet.classList.add('open');
+    syncChrome();
+  }
+  function closeSheet() {
+    sheetOpen = false;
+    scrim.classList.remove('on');
+    sheet.classList.remove('open');
+    syncChrome();
+  }
+  function syncChrome() {
+    var depth = stacks[activeTab].length - 1;
+    tabbar.classList.toggle('hidden', depth > 0 || sheetOpen);
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll('[data-sheet]'), function (btn) {
+    btn.addEventListener('click', function () { openSheet(); });
+  });
+  document.getElementById('sheet-done').addEventListener('click', function () { closeSheet(); });
+  scrim.addEventListener('click', function () { closeSheet(); });
+
+  var sdrag = null;
+  sheet.addEventListener('pointerdown', function (e) {
+    if (sheetBody.scrollTop > 0) { return; }
+    sdrag = { y0: e.clientY, dy: 0 };
+    sheet.style.transition = 'none';
+  });
+  sheet.addEventListener('pointermove', function (e) {
+    if (!sdrag) { return; }
+    var dy = Math.max(0, e.clientY - sdrag.y0);
+    sdrag.dy = dy;
+    sheet.style.transform = 'translateY(' + dy + 'px)';
+  });
+  function endSheetDrag() {
+    if (!sdrag) { return; }
+    var d = sdrag;
+    sdrag = null;
+    sheet.style.transition = 'transform 300ms cubic-bezier(0.32,0.72,0,1)';
+    if (d.dy > 90) {
+      sheet.style.transform = 'translateY(100%)';
+      window.setTimeout(function () {
+        scrim.classList.remove('on');
+        sheet.classList.remove('open');
+        sheetOpen = false;
+        sheet.style.transition = ''; sheet.style.transform = '';
+        syncChrome();
+      }, 300);
+    } else {
+      sheet.style.transform = 'translateY(0)';
+      window.setTimeout(function () {
+        sheet.style.transition = ''; sheet.style.transform = '';
+      }, 300);
+    }
+  }
+  sheet.addEventListener('pointerup', endSheetDrag);
+  sheet.addEventListener('pointercancel', endSheetDrag);
+
+  /* ── push / back 按钮 ───────────────────────────────────── */
+  Array.prototype.forEach.call(document.querySelectorAll('[data-push]'), function (btn) {
+    btn.addEventListener('click', function () {
+      push(btn.getAttribute('data-push'));
+    });
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-back]'), function (btn) {
+    btn.addEventListener('click', function () {
+      if (suppressClick) { suppressClick = false; return; }
+      pop();
+    });
+  });
+
+  /* ── 开关 ────────────────────────────────────────────────── */
+  Array.prototype.forEach.call(document.querySelectorAll('[data-switch]'), function (sw) {
+    sw.addEventListener('click', function () {
+      var on = sw.getAttribute('data-on') === '1';
+      sw.setAttribute('data-on', on ? '0' : '1');
+      sw.setAttribute('aria-checked', on ? 'false' : 'true');
+    });
+  });
+
+  /* ── 分段控件 ────────────────────────────────────────────── */
+  Array.prototype.forEach.call(document.querySelectorAll('.seg button'), function (btn) {
+    btn.addEventListener('click', function () {
+      Array.prototype.forEach.call(btn.parentNode.children, function (b) {
+        b.setAttribute('aria-selected', 'false');
+      });
+      btn.setAttribute('aria-selected', 'true');
+    });
+  });
+
+  /* ── 舵机校准 ────────────────────────────────────────────── */
+  var calibBtn = document.getElementById('calib-btn');
+  var calibText = document.getElementById('calib');
+  calibBtn.addEventListener('click', function () {
+    calibText.textContent = '校准完成';
+    calibText.style.color = 'var(--system-green)';
+  });
+
+  /* ── 小栈的脸（设备端几何，出处见 README） ───────────────── */
+  /* 6 档情绪：眼睑开合 eyeWeight / 眼旋转 eyeRot / 嘴形 mouthWeight
+     —— 与 docs/spec/06 的 3 元素 × 5 参数模型同构（此处取渲染子集） */
+  var FACES = {
+    idle:      { eyeWeight: 100, eyeRot: 0,   mouthWeight: 30, mood: '在看你' },
+    happy:     { eyeWeight: 72,  eyeRot: 0,   mouthWeight: 55, mood: '心情不错' },
+    excited:   { eyeWeight: 88,  eyeRot: 0,   mouthWeight: 88, mood: '很兴奋' },
+    surprised: { eyeWeight: 118, eyeRot: 0,   mouthWeight: 18, mood: '吓一跳' },
+    sleepy:    { eyeWeight: 35,  eyeRot: 0,   mouthWeight: 12, mood: '有点困' },
+    cross:     { eyeWeight: 58,  eyeRot: 0,   mouthWeight: 8,  mood: '有点生气' }
+  };
+  var FACE_ORDER = ['idle', 'happy', 'excited', 'surprised', 'sleepy', 'cross'];
+  var faceIdx = 0;
+
+  /* ── 身体信号灯带：12 颗 RGB LED（左右各 6），每种情绪有专属图案 ──
+     Nothing 的 Glyph 原则：① 状态走一条独立通道，不靠文字复述；
+     ② 每种状态有专属图案（每个通知音一枚 bespoke pattern）。 */
+  var SIG_PATTERNS = {
+    idle:      '001100|001100',
+    happy:     '011110|011110',
+    excited:   '111111|111111',
+    surprised: '110011|110011',
+    sleepy:    '100000|000001',
+    cross:     '111000|000111'
+  };
+  function buildSig() {
+    var box = document.getElementById('ov-sig');
+    if (!box) { return; }
+    for (var h = 0; h < 2; h++) {
+      var seg = document.createElement('span');
+      seg.className = 'sig-half';
+      for (var i = 0; i < 6; i++) { seg.appendChild(document.createElement('i')); }
+      box.appendChild(seg);
+    }
+  }
+  function applySig(name) {
+    var box = document.getElementById('ov-sig');
+    if (!box) { return; }
+    var pat = (SIG_PATTERNS[name] || SIG_PATTERNS.idle).split('|');
+    var dots = box.querySelectorAll('i');
+    for (var i = 0; i < dots.length; i++) {
+      var side = i < 6 ? 0 : 1;
+      dots[i].classList.toggle('on', pat[side].charAt(i % 6) === '1');
+    }
+  }
+  buildSig();
+
+  function mapRange(v, iMin, iMax, oMin, oMax) {
+    if (iMax === iMin) { return oMin; }
+    return oMin + Math.trunc((v - iMin) * (oMax - oMin) / (iMax - iMin));
+  }
+  function eyeDiameter(size) { return mapRange(size, -100, 100, 8, 32); }
+  function eyeLidOffsetY(d, w) { return -mapRange(w, 0, 100, 0, d); }
+  function mouthWidth(w) { return mapRange(w, 0, 100, 90, 60); }
+  function mouthHeight(w) { return mapRange(w, 0, 100, 6, 50); }
+  function mouthRadius(w) { return mapRange(w, 0, 100, 0, 16); }
+
+  function drawFace() {
+    var f = FACES[FACE_ORDER[faceIdx]];
+    var d = eyeDiameter(0);
+    var lidY = eyeLidOffsetY(d, f.eyeWeight);
+    var mw = mouthWidth(f.mouthWeight);
+    var mh = mouthHeight(f.mouthWeight);
+    var mr = mouthRadius(f.mouthWeight);
+    var s = [];
+    s.push('<rect x="0" y="0" width="320" height="240" fill="#000000"/>');
+    [[90, 'L'], [230, 'R']].forEach(function (p) {
+      s.push('<g transform="translate(' + p[0] + ' 104) rotate(' + f.eyeRot + ')">');
+      s.push('<circle cx="0" cy="0" r="' + (d / 2) + '" fill="none" stroke="#FFFFFF" stroke-width="3"/>');
+      s.push('<rect x="' + (-d / 2) + '" y="' + (-d / 2 + lidY) + '" width="' + d + '" height="' + d + '" fill="#000000"/>');
+      s.push('</g>');
+    });
+    s.push('<rect x="' + (160 - mw / 2) + '" y="' + (146 - mh / 2) + '" width="' + mw + '" height="' + mh + '" rx="' + mr + '" fill="none" stroke="#FFFFFF" stroke-width="3"/>');
+    document.getElementById('face').innerHTML = s.join('');
+    document.getElementById('face-mood').textContent = f.mood;
+    applySig(FACE_ORDER[faceIdx]);
+  }
+  function setFace(name) {
+    var i = FACE_ORDER.indexOf(name);
+    if (i >= 0) { faceIdx = i; }
+    if (typeof applyServo === 'function') { applyServo(); } else { drawFace(); }
+  }
+  document.getElementById('face').addEventListener('click', function () {
+    faceIdx = (faceIdx + 1) % FACE_ORDER.length;
+    drawFace();
+  });
+  drawFace();
+
+  /* ── 输入区 ─────────────────────────────────────────────── */
+  function addBubble(thread, text, side) {
+    var b = document.createElement('div');
+    b.className = 'bubble ' + side;
+    b.textContent = text;
+    thread.appendChild(b);
+    var scroller = thread.closest('.scroll');
+    if (scroller) { scroller.scrollTop = scroller.scrollHeight; }
+  }
+
+  function setupComposer(key) {
+    var input = document.getElementById('input-' + key);
+    var shell = input.parentNode;
+    var mic = document.getElementById('mic-' + key);
+    var send = document.getElementById('send-' + key);
+    var thread = document.getElementById('thread-' + key);
+
+    input.addEventListener('input', function () {
+      shell.classList.toggle('has-text', input.value.trim().length > 0);
+    });
+    mic.addEventListener('click', function () {
+      var on = shell.classList.toggle('listening');
+      input.placeholder = on ? '正在听' : '说点什么';
+    });
+    send.addEventListener('click', function () {
+      var text = input.value.trim();
+      if (!text) { return; }
+      addBubble(thread, text, 'out');
+      input.value = '';
+      shell.classList.remove('has-text');
+      window.setTimeout(function () {
+        addBubble(thread, '嗯，我听着呢。', 'in');
+        setFace('happy');
+      }, 700);
+    });
+  }
+    setupComposer('chat');
+
+  /* ── 导航栏大标题收起 ───────────────────────────────────── */
+  Array.prototype.forEach.call(document.querySelectorAll('.page'), function (p) {
+    var scroller = p.querySelector('.scroll');
+    if (!scroller) { return; }
+    scroller.addEventListener('scroll', function () {
+      p.classList.toggle('scrolled', scroller.scrollTop > 6);
+    }, { passive: true });
+  });
+
+  syncTabs();
+  syncChrome();
+})();
+
+/* ==== SCHEME-SWITCHER JS (injected 2026-10-25) ==== */
+(function () {
+  var KEY = 'stackchan.scheme';
+  var root = document.documentElement;
+  var ids = ['paper-terracotta','pure-white-blank','warm-paper-serif','tuck-dark-calm'];
+  function apply(id) {
+    if (ids.indexOf(id) < 0) { id = ids[0]; }
+    root.setAttribute('data-scheme', id);
+    try { localStorage.setItem(KEY, id); } catch (e) {}
+    var btns = document.querySelectorAll('[data-scheme-btn]');
+    for (var i = 0; i < btns.length; i++) {
+      btns[i].setAttribute('aria-pressed',
+        btns[i].getAttribute('data-scheme-btn') === id ? 'true' : 'false');
+    }
+  }
+  var saved = null;
+  try { saved = localStorage.getItem(KEY); } catch (e) {}
+  apply(saved || ids[0]);
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest ? e.target.closest('[data-scheme-btn]') : null;
+    if (t) { apply(t.getAttribute('data-scheme-btn')); }
+  });
+})();
+
+</script>
+</body>
+</html>

@@ -1,0 +1,100 @@
+# NOTICE — 第三方署名
+
+StackChan Companion 以 **MIT** 发布。本文件列出本仓库所派生的第三方作品、各自许可，
+以及我们在使用它们时承担的义务。
+
+本仓库**不是** M5Stack Technology CO LTD 的官方产品，与 M5Stack 无隶属关系，未获其背书。
+"StackChan" 是 M5Stack Technology CO LTD 的商标；本仓库不使用该商标作为自身标识，
+也不复制其产品形象（App 图标为自有的抽象符号）。
+
+---
+
+## 一、派生作品（我们 fork / 改写）
+
+| 项目 | 链接 | 许可 | 我们的用法 | 义务 |
+|---|---|---|---|---|
+| m5stack/StackChan（`firmware/`） | https://github.com/m5stack/StackChan | MIT | 派生：保留硬件 HAL / 表情引擎 / 舵机 / 触摸 / 渲染层 | 保留原版权声明与许可文本；保留每个源文件的 SPDX 头 |
+| m5stack/StackChan（`server/`） | https://github.com/m5stack/StackChan | MIT | 派生：仅取协议模型与桥接思路 | 同上 |
+
+Copyright (c) 2026 M5Stack Technology CO LTD
+(original work licensed under the MIT License; see `LICENSE`)
+
+**未使用的上游部分**：`app/`（官方 Flutter 客户端）在本仓库中**没有对应物** ——
+iOS 端为原生 SwiftUI 从零重写，未复制上游任何 App 代码。
+上游 `app/` 目录缺少独立 LICENSE 文件（仅有 SPDX 头），因此本仓库完全不触碰它。
+
+> **2026-10-30 首次公开发布前的自查发现**：早期 v2 原型目录 `prototype/mobile-v2/assets/`
+> 里曾留有一份官方 `stack_chan_model.glb`（3.3 MB），首提交差点把它带上去。
+> 已从版本控制移除并由 `.gitignore` 挡住；`tools/repo_release_check.py` 的
+> **`OFFICIAL_ASSET_IN_REPO`** 判据会持续拦截同类误入（仓内出现任何 3D 模型文件即 FAIL）。
+> 本仓的 3D 预览一律用**程序化几何体**（three.js，MIT）。
+
+---
+
+## 二、固件内嵌的第三方组件（随派生保留原始声明）
+
+| 组件 | 许可 | 版权 | 位置（上游） |
+|---|---|---|---|
+| Bosch BMI270 Sensor API | BSD-3-Clause | Copyright (c) 2023 Bosch Sensortec GmbH | `firmware/main/hal/drivers/bmi270/BMI270_SensorAPI/` |
+| FTServo_Arduino | MIT | Copyright (c) 2024 ftservo | `firmware/main/hal/drivers/FTServo_Arduino/` |
+| LVGL ~9.4.0 | MIT | Copyright (c) LVGL | 设备端渲染层 |
+| espressif/esp-sr | Apache-2.0 | Espressif Systems | 唤醒词 / VAD |
+| sherpa-onnx（仅 KWS 部分） | Apache-2.0 | k2-fsa | 唤醒词；完整 ASR 不入固件 |
+
+> 上述组件的原始 LICENSE / NOTICE 文件随派生代码原样保留，我们不"整理"或删除任何 SPDX 头。
+
+---
+
+## 三、我们引入或参考的开源项目
+
+| 项目 | 许可 | 我们的用法 | 义务 |
+|---|---|---|---|
+| lvgl/lvgl | MIT | 设备端渲染（随派生） | 保留声明 |
+| espressif/esp-sr | Apache-2.0 | 唤醒 / VAD | 保留 NOTICE |
+| sherpa-onnx | Apache-2.0 | 仅 KWS | 保留 NOTICE |
+| mem0ai/mem0 | Apache-2.0 | 记忆分层**设计参考**，未复制代码 | 保留 NOTICE |
+| nalexn/ViewInspector | MIT | 把设计宪法变成 iOS 单元测试断言 | 保留声明 |
+| satnaing/shadcn-admin | MIT | 仅借鉴信息结构 | 保留声明 |
+| tabler/tabler | MIT | 仅借鉴信息结构 | 保留声明 |
+| lucide-static | ISC | 图标描边风格统一 | 保留声明 |
+| @capacitor/assets | MIT | 一个 logo → 多平台尺寸 | 保留声明 |
+| 霞鹜文楷（LXGW WenKai） | OFL-1.1 | 中文正文字体候选 | 保留声明 |
+| gogf/gf v2 | Apache-2.0 | 后端框架（若采用官方 server 基座） | 保留 NOTICE |
+| golangci-lint / gosec / buf | MIT / Apache-2.0 / BSD | 后端 CI | 保留声明 |
+| swift-format / SwiftLint | Apache-2.0 / MIT | iOS CI | 保留声明 |
+| PyYAML 等 Python 生态依赖 | 各自 MIT/BSD | server 与 tools 运行时 | 随依赖保留 |
+
+---
+
+## 四、⚠️ 只借鉴、不复制的项目（AGPL 红线）
+
+| 项目 | 许可 | 处置 |
+|---|---|---|
+| SillyTavern | **AGPL-3.0** | ⛔ **只借鉴公开的 Card V2 格式规范与思路，不复制任何代码**。我们只对齐字段名与语义，解析器独立编写，不复制其 JSON schema 文件本体。 |
+
+> **纪律**：每次引入外部代码前必须确认其不是 AGPL/GPL 且与 MIT 兼容。
+> 一旦复制了 AGPL 项目的代码，整个仓库的许可都会被污染 —— 这是本项目的红线。
+
+---
+
+## 五、美术与图形资产
+
+| 资产 | 许可 | 说明 |
+|---|---|---|
+| Twemoji 图形 | CC-BY 4.0 | 若使用需署名；上游表情引擎内含 |
+| 官方表情位图装饰器 | 未逐个核实 | 上游表情为程序化绘制 + 少量装饰器位图；位图原始出处**尚未逐个核实**，正式发布前需补 |
+
+---
+
+## 六、发布前待办（诚实登记）
+
+1. 上表第三节中依赖的具体版本号，需在正式发布前**逐条复核上游 LICENSE 原文**。
+2. 第五节的位图装饰器许可需补齐。
+3. `docs/research/33-许可与商标边界.md` §六 登记的其余未核实项同样适用。
+4. `ui-prototype/assets/photo.jpg`：早期 UI 原型的**占位图**，全仓零引用，
+   出处未核实 ⇒ 已移出版本控制（`.gitignore` 挡住）。克隆后该图缺失，
+   **不影响任何功能**；若日后要正式使用，须换成许可明确的素材。
+
+---
+
+*完整的许可与商标边界分析见 [`docs/research/33-许可与商标边界.md`](docs/research/33-许可与商标边界.md)。*

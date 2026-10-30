@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>小栈设备屏 · 遥控反馈态模拟器</title>
+<style>
+  :root {
+    --bg: #101216;
+    --screen: #0a0b0e;
+    --text: #f2f2f0;
+    --dim: rgba(242,242,240,.55);
+    --accent: #E3A857;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh;
+    background: radial-gradient(120% 100% at 50% 0%, #1b1e26 0%, var(--bg) 70%);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Microsoft YaHei UI", Arial, sans-serif;
+    display: flex; flex-direction: column; align-items: center; gap: 16px;
+    padding: 24px 12px 40px;
+  }
+  h1 { font-size: 17px; font-weight: 600; margin: 0; }
+  .desc { font-size: 12px; color: var(--dim); margin: 0; text-align: center; max-width: 420px; line-height: 1.6; }
+  .device-shell {
+    width: 320px; height: 240px;
+    border-radius: 14px;
+    background: var(--screen);
+    border: 1px solid rgba(255,255,255,.14);
+    box-shadow: 0 24px 60px rgba(0,0,0,.5), inset 0 0 0 1px rgba(255,255,255,.04);
+    position: relative; overflow: hidden;
+    touch-action: none;
+  }
+  .device-shell canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .controls {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: center;
+    font-size: 12px; color: var(--dim);
+  }
+  .controls button {
+    background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.14);
+    color: var(--text); border-radius: 999px; padding: 6px 14px; font-size: 12px; cursor: pointer;
+  }
+  .controls button:active { background: rgba(255,255,255,.16); }
+  .readout { font-variant-numeric: tabular-nums; color: var(--text); }
+  /* 托盘（请无视，仅调试参考） */
+  .dir-hint { font-size: 11px; color: var(--dim); opacity: .7; }
+</style>
+</head>
+<body>
+  <h1>设备屏 · 遥控反馈态</h1>
+  <p class="desc">闪付给 320×240 屏幕的约定：被遥控时「眼睛看向左右、眉尖随俯仰、四个角显示角度」，空闲时回到深色 + 居中脸。用鼠标/手指在屏上拖动即可模拟被遥控。</p>
+  <div class="device-shell" id="shell">
+    <canvas id="screen"></canvas>
+  </div>
+  <div class="controls">
+    <span>Yaw <b class="readout" id="yawOut">0°</b></span>
+    <span>Pitch <b class="readout" id="pitchOut">6°</b></span>
+    <button id="reset">回正</button>
+  </div>
+  <p class="dir-hint">拖动设备屏区域 ↔ 改变角度（Yaw 满程 −128°~128°，Pitch 3°~87°，阻尼同步到四个角的数字）</p>
+
+<script>
+(function () {
+  const canvas = document.getElementById("screen");
+  const shell = document.getElementById("shell");
+  const yawOut = document.getElementById("yawOut");
+  const pitchOut = document.getElementById("pitchOut");
+  const ctx = canvas.getContext("2d");
+  const W = 320, H = 240;
+  const DPR = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+  canvas.width = W * DPR; canvas.height = H * DPR;
+  ctx.scale(DPR, DPR);
+
+  let yaw = 0, pitch = 6, targetYaw = 0, targetPitch = 6;
+  let dragging = false, lastX = 0, lastY = 0;
+
+  const EYE_Y = 104, EYE_GAP = 62, EYE_R = 15;
+  const PUPIL_R = 7;
+
+  function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+  function draw() {
+    // 应用阻尼
+    yaw += (targetYaw - yaw) * 0.18;
+    pitch += (targetPitch - pitch) * 0.18;
+    yawOut.textContent = Math.round(yaw) + "°";
+    pitchOut.textContent = Math.round(pitch) + "°";
+
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = "#0a0b0e";
+    ctx.fillRect(0, 0, W, H);
+
+    // 眼白
+    ctx.fillStyle = "#f1f5f9";
+    const eyeUp = -clamp(yaw, -8, 8) * 0.35;          // 左右眼的竖直错位跟随转头
+    for (const side of [-1, 1]) {
+      const ex = W / 2 + side * EYE_GAP;
+      const ey = EYE_Y + eyeUp * side;
+      ctx.beginPath(); ctx.arc(ex, ey, EYE_R, 0, Math.PI * 2); ctx.fill();
+    }
+
+    // 瞳孔：随摇杆方向移动（小范围）
+    const px = clamp(yaw, -128, 128) / 128 * 5;
+    const py = clamp(pitch - 6, -20, 20) / 20 * 4;
+    ctx.fillStyle = "#101216";
+    for (const side of [-1, 1]) {
+      const ex = W / 2 + side * EYE_GAP;
+      ctx.beginPath(); ctx.arc(ex + px, EYE_Y - 2 + py + eyeUp * side * 0.4, PUPIL_R, 0, Math.PI * 2); ctx.fill();
+    }
+
+    // 嘴：随 pitch 微开
+    const mouthOpen = clamp(pitch, 3, 87) / 87 * 3;
+    ctx.fillStyle = "#101216";
+    ctx.beginPath();
+    ctx.ellipse(W / 2, 152, 26, 4 + mouthOpen, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 四角角度读数（设备屏真实感：小字号）
+    ctx.fillStyle = "rgba(242,242,240,.5)";
+    ctx.font = "10px monospace";
+    ctx.textBaseline = "top";
+    ctx.textAlign = "left";
+    ctx.fillText(`Y${Math.round(yaw)} P${Math.round(pitch)}`, 10, 10);
+    ctx.textAlign = "right";
+    ctx.fillText(`Y${Math.round(yaw)} P${Math.round(pitch)}`, W - 10, 10);
+    ctx.textBaseline = "bottom";
+    ctx.textAlign = "left";
+    ctx.fillText(`Y${Math.round(yaw)} P${Math.round(pitch)}`, 10, H - 8);
+    ctx.textAlign = "right";
+    ctx.fillText(`Y${Math.round(yaw)} P${Math.round(pitch)}`, W - 10, H - 8);
+
+    requestAnimationFrame(draw);
+  }
+
+  function pointerPos(e) {
+    const rect = shell.getBoundingClientRect();
+    const scaleX = W / rect.width, scaleY = H / rect.height;
+    return { x: (e.clientX - rect.left) * scaleX, y: (e.clientY - rect.top) * scaleY };
+  }
+
+  shell.addEventListener("pointerdown", (e) => {
+    e.preventDefault();
+    dragging = true;
+    lastX = e.clientX; lastY = e.clientY;
+    shell.setPointerCapture(e.pointerId);
+  });
+  shell.addEventListener("pointermove", (e) => {
+    if (!dragging) return;
+    e.preventDefault();
+    const dx = e.clientX - lastX, dy = e.clientY - lastY;
+    lastX = e.clientX; lastY = e.clientY;
+    targetYaw = clamp(targetYaw + dx, -128, 128);
+    targetPitch = clamp(targetPitch + dy * 0.5, 3, 87);
+  });
+  const endDrag = () => { dragging = false; };
+  shell.addEventListener("pointerup", endDrag);
+  shell.addEventListener("pointercancel", endDrag);
+  document.getElementById("reset").addEventListener("click", () => { targetYaw = 0; targetPitch = 6; });
+
+  draw();
+})();
+</script>
+</body>
+</html>

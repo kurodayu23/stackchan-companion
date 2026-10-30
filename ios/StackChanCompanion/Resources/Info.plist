@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>zh_CN</string>
+	<key>CFBundleDisplayName</key>
+	<string>小栈</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleVersion</key>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<!--
+	  本地网络权限：LAN 直连链路要用到。
+	  出处：docs/spec/03-通信链路预设与数据契约.md §4 第 2 条
+	    「本地网络权限 | 必须配 NSLocalNetworkUsageDescription；iOS 14+ 首次要用户授权」
+	  ⚠️ 文案待拍板（属于产品文案层）。
+	-->
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>TODO_PENDING_DESIGN_DECISION</string>
+	<!-- 麦克风：陪伴页的按住说话。出处：docs/spec/01 §3 元素 4。⚠️ 文案待拍板。 -->
+	<key>NSMicrophoneUsageDescription</key>
+	<string>TODO_PENDING_DESIGN_DECISION</string>
+	<!--
+	  Live Activity 支持。
+	  出处：docs/research/58-iOS端架构决策.md §5；docs/spec/01 §3 元素 10–11
+	-->
+	<key>NSSupportsLiveActivities</key>
+	<true/>
+	<key>UILaunchScreen</key>
+	<dict/>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+</dict>
+</plist>

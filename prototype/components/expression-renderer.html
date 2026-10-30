@@ -1,0 +1,2883 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>小栈表情渲染器 · 无色线框调试视图</title>
+<!--
+  调试可视化，不是最终 UI。最终视觉待用户拍板。
+  ============================================================
+  本文件只做两件事：
+    1) 把 docs/spec/06-表情参数模型.md §6.2 的固件渲染几何，原样跑一遍；
+    2) 把「设备自己会覆盖远程表情」的三条事实，演一遍给人看。
+  它不定义任何配色 / 圆角 / 阴影 / 字体 / 动效曲线 / 表情风格 ——
+  那些全部是「待用户拍板」项（spec/06 §7.2、§9.2 P-1..P-6）。
+  因此本页只有：灰阶线框 + 参数数值标注 + 通用字体（monospace / sans-serif，无外链字体）。
+  ============================================================
+  零外部依赖：单文件，双击可直接打开。
+  几何出处（固件 m5stack/StackChan 1.6.0，路径相对 firmware/main/stackchan/）：
+    avatar/skins/default/eyes.cpp:13-16,33,40,63-65,75,137,140
+    avatar/skins/default/mouth.cpp:12-18,42-43,52-54,64
+    avatar/skins/default/default.cpp:13-15
+    avatar/skins/default/default.h:21-22
+    avatar/avatar/elements/element.h:26-30,41-44,55-57
+    avatar/avatar/elements/feature.h:22-25,36-39
+    animation/animation.cpp:70-95
+    modifiers/blink.h:25,83
+    modifiers/idle_expression.h:21,24,51-59
+    components/smooth_ui_toolkit/src/core/math/base.hpp:40-48
+    managed_components/lvgl__lvgl/src/core/lv_obj_pos.c:625-705
+-->
+<style>
+  /* 全部灰阶；无强调色、无圆角、无阴影、无渐变、无过渡 */
+  :root{
+    --g0:#ffffff; --g1:#f4f4f4; --g2:#e8e8e8; --g3:#d0d0d0; --g4:#9a9a9a;
+    --g5:#5c5c5c; --g6:#262626; --mono:monospace; --sans:sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--g0);color:var(--g6);font-family:var(--sans);font-size:14px;line-height:1.55}
+  .wrap{max-width:1180px;margin:0 auto;padding:24px 18px 64px}
+  h1{font-size:19px;font-weight:600;margin:0 0 4px}
+  h2{font-size:15px;font-weight:600;margin:0 0 8px}
+  .sub{font-size:13px;color:var(--g5);margin:0 0 10px}
+  .banner{border:1px solid var(--g6);background:var(--g1);padding:10px 12px;margin:0 0 18px;font-size:13px}
+  .banner b{font-weight:600}
+  .note{font-size:12px;color:var(--g5);margin:6px 0 0}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media (max-width:900px){.cols{grid-template-columns:1fr}}
+  .box{border:1px solid var(--g3);padding:14px}
+  .box + .box{margin-top:18px}
+  .stage{border:1px solid var(--g3);background:var(--g1);padding:10px;display:flex;justify-content:center;align-items:flex-start;gap:8px;flex-wrap:wrap}
+  .cap{font-size:12px;color:var(--g5);margin:0 0 8px}
+  svg{display:block}
+  .mono{font-family:var(--mono)}
+  .tbl{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:11.5px;margin-top:10px}
+  .tbl th,.tbl td{border:1px solid var(--g3);padding:3px 6px;text-align:left;font-weight:400}
+  .tbl th{background:var(--g1);color:var(--g5)}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .el{border:1px solid var(--g3);padding:8px}
+  .el h3{font-size:12px;font-family:var(--mono);margin:0 0 6px;color:var(--g5);font-weight:600}
+  .row{display:grid;grid-template-columns:58px 1fr 46px;align-items:center;gap:8px;font-size:12px;padding:2px 0}
+  .row .v{font-family:var(--mono);text-align:right;font-size:11.5px}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:18px;background:transparent;margin:0}
+  input[type=range]::-webkit-slider-runnable-track{height:1px;background:var(--g4)}
+  input[type=range]::-moz-range-track{height:1px;background:var(--g4)}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:12px;height:12px;border-radius:50%;background:var(--g0);border:1px solid var(--g6);margin-top:-6px;cursor:pointer}
+  input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:var(--g0);border:1px solid var(--g6);cursor:pointer}
+  button{font:inherit;font-size:13px;color:var(--g6);background:var(--g1);border:1px solid var(--g4);padding:7px 11px;cursor:pointer}
+  button:hover{background:var(--g2)}
+  button[aria-pressed="true"]{background:var(--g6);color:var(--g0);border-color:var(--g6)}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .kv{font-family:var(--mono);font-size:11.5px;color:var(--g5);margin-top:8px;white-space:pre-wrap}
+  .legend{font-size:12px;color:var(--g5);margin-top:10px}
+  .legend span{display:inline-block;margin-right:14px}
+  .sw{display:inline-block;width:16px;height:0;border-top:1px solid var(--g6);vertical-align:middle;margin-right:4px}
+  .sw.dash{border-top-style:dashed;border-color:var(--g5)}
+  footer{margin-top:26px;font-size:12px;color:var(--g5);border-top:1px solid var(--g3);padding-top:12px}
+  hr{border:0;border-top:1px solid var(--g3);margin:18px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>小栈表情渲染器 · 无色线框调试视图</h1>
+  <p class="sub">调试工具，不是 UI 方案。所有几何来自固件源码；所有视觉细节待用户拍板。</p>
+
+  <div class="banner">
+    <b>调试可视化，不是最终 UI。最终视觉待用户拍板。</b><br/>
+    本页只跑 <span class="mono">docs/spec/06-表情参数模型.md</span> §6.2 的固件几何，并演示三条覆盖事实。
+    不含配色 / 圆角 / 阴影 / 字体 / 动效曲线 / 表情风格的任何决定 —— 那些是 spec/06 §9.2 的 P-1..P-6 待拍板项。
+  </div>
+
+  <div class="cols">
+
+    <!-- ===================== 设备轨 ===================== -->
+    <section class="box">
+      <h2>轨道 A · 设备（320×240，1:1 物理像素）</h2>
+      <p class="cap">
+        按固件几何逐像素还原：眼白=圆、眼睑=同尺寸方块、嘴=圆角矩形。
+        设备端真实配色是纯黑底 + 纯白前景（<span class="mono">default.h:21-22</span>），<b>本页不体现配色</b>，只画线框。
+      </p>
+      <div class="stage">
+        <svg id="svgDevice" width="320" height="240" viewBox="0 0 320 240" shape-rendering="crispEdges"
+             role="img" aria-label="设备轨线框：320 乘 240"></svg>
+      </div>
+      <table class="tbl" id="tblDevice"><thead><tr><th>元素</th><th>中心</th><th>直径</th><th>眼睑偏移</th><th>宽</th><th>高</th><th>圆角</th><th>旋转</th></tr></thead><tbody></tbody></table>
+      <p class="note" id="noteDevice">当前 = 我们下发的参数（无覆盖）。</p>
+    </section>
+
+    <!-- ===================== App 轨 ===================== -->
+    <section class="box">
+      <h2>轨道 B · App（同一套几何函数，另一比例尺）</h2>
+      <p class="cap">
+        <b>不是 App 版式设计</b>，只是把同一个几何函数放大 2 倍画出来，用来验证「同一套参数 ⇒ 同一张脸」。
+        App 端的最终比例 / 配色 / 抗锯齿策略属待拍板项（spec/06 §7.2）。
+      </p>
+      <div class="stage">
+        <svg id="svgApp" width="640" height="480" viewBox="0 0 320 240"
+             role="img" aria-label="App 轨线框：同一几何放大两倍"></svg>
+      </div>
+      <table class="tbl" id="tblApp"><thead><tr><th>元素</th><th>中心</th><th>直径</th><th>眼睑偏移</th><th>宽</th><th>高</th><th>圆角</th><th>旋转</th></tr></thead><tbody></tbody></table>
+      <p class="note" id="noteApp">当前 = 我们下发的参数（无覆盖）。</p>
+    </section>
+
+  </div>
+
+  <!-- ===================== 参数面板 ===================== -->
+  <section class="box">
+    <h2>参数面板 · 3 元素 × 5 参数 = 15 个</h2>
+    <p class="cap">
+      改任何一个滑块，<b>两条轨道同时变</b>。钳位范围即固件钳位范围
+      （<span class="mono">element.h:26-30,41-44</span> · <span class="mono">feature.h:22-25,36-39</span>）。
+    </p>
+    <div class="grid" id="panel"></div>
+
+    <div class="chips" id="emotions" role="group" aria-label="固件六种情绪"></div>
+    <p class="note">
+      情绪只写<b>眼睛的 weight / rotation</b>（固件事实，<span class="mono">eyes.cpp:87-124</span>）。
+      嘴与 x/y/size 的情绪语义<b>尚无固件事实</b>（spec/06 §5.2 表 B，<b>待拍板 P-1</b>）⇒ 本页不改它们。
+    </p>
+  </section>
+
+  <!-- ===================== 覆盖事实对照 ===================== -->
+  <section class="box">
+    <h2>对照区 · 三条「设备会覆盖远程表情」的事实</h2>
+    <p class="cap">三条事实的渲染含义见 spec/06 §8。本区只演示，不做方案建议。</p>
+
+    <div class="btnrow">
+      <button id="btnDecay">看它 2 秒后会怎样</button>
+      <button id="btnEmotion">设备端情绪覆盖（hello / hi / love）</button>
+      <button id="btnPlay">播放这条时间轴</button>
+      <button id="btnInterp" aria-pressed="false">插值：我们自己写的</button>
+      <button id="btnReset">复位</button>
+    </div>
+
+    <div class="stage" style="margin-top:12px">
+      <svg id="svgTimeline" width="1120" height="120" viewBox="0 0 1120 120" role="img"
+           aria-label="事件与关键帧时间轴"></svg>
+    </div>
+    <!-- KEYFRAMES:BEGIN -->
+<p class="note" id="kfSource">时间轴数据：来源 <span class="mono">D:/AP/AP7000/ai-workspace/stackchan-research/r59/keyframes.json</span>，共 <b>292</b> 帧真实 0x14 关键帧；本页等距抽取 <b>60</b> 帧（下标 0..291，覆盖整条时间轴），这 60 帧总时长 <b>2400 ms</b>。设备端播放是<b>硬切</b>，帧间那段平滑是我们自己写的。</p>
+<script id="timeline-data" type="application/json">
+[
+  {
+    "leftEye": {
+      "x": 13,
+      "y": -1,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "rightEye": {
+      "x": 13,
+      "y": -1,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "mouth": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "weight": 30,
+      "size": 0
+    },
+    "yawServo": {
+      "angle": 14,
+      "speed": 800
+    },
+    "pitchServo": {
+      "angle": 762,
+      "speed": 800
+    },
+    "leftRgbColor": "#BABABA",
+    "rightRgbColor": "#CCCCCC",
+    "durationMs": 40
+  },
+  {
+    "leftEye": {
+      "x": 41,
+      "y": 24,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "rightEye": {
+      "x": 41,
+      "y": 24,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "mouth": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "weight": 39,
+      "size": 0
+    },
+    "yawServo": {
+      "angle": 44,
+      "speed": 800
+    },
+    "pitchServo": {
+      "angle": 695,
+      "speed": 800
+    },
+    "leftRgbColor": "#C6C6C6",
+    "rightRgbColor": "#CFCFCF",
+    "durationMs": 40
+  },
+  {
+    "leftEye": {
+      "x": 37,
+      "y": 15,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "rightEye": {
+      "x": 37,
+      "y": 15,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "mouth": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "weight": 39,
+      "size": 0
+    },
+    "yawServo": {
+      "angle": 40,
+      "speed": 800
+    },
+    "pitchServo": {
+      "angle": 719,
+      "speed": 800
+    },
+    "leftRgbColor": "#C8C8C8",
+    "rightRgbColor": "#CCCCCC",
+    "durationMs": 40
+  },
+  {
+    "leftEye": {
+      "x": 21,
+      "y": -5,
+      "rotation": 0,
+      "weight": 99,
+      "size": 0
+    },
+    "rightEye": {
+      "x": 21,
+      "y": -5,
+      "rotation": 0,
+      "weight": 99,
+      "size": 0
+    },
+    "mouth": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "weight": 38,
+      "size": 0
+    },
+    "yawServo": {
+      "angle": 22,
+      "speed": 800
+    },
+    "pitchServo": {
+      "angle": 773,
+      "speed": 800
+    },
+    "leftRgbColor": "#C8C8C8",
+    "rightRgbColor": "#CCCCCC",
+    "durationMs": 40
+  },
+  {
+    "leftEye": {
+      "x": 8,
+      "y": -11,
+      "rotation": 0,
+      "weight": 96,
+      "size": 0
+    },
+    "rightEye": {
+      "x": 8,
+      "y": -11,
+      "rotation": 0,
+      "weight": 96,
+      "size": 0
+    },
+    "mouth": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "weight": 0,
+      "size": 0
+    },
+    "yawServo": {
+      "angle": 9,
+      "speed": 800
+    },
+    "pitchServo": {
+      "angle": 791,
+      "speed": 800
+    },
+    "leftRgbColor": "#BEBEBE",
+    "rightRgbColor": "#C7C7C7",
+    "durationMs": 40
+  },
+  {
+    "leftEye": {
+      "x": 2,
+      "y": 5,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "rightEye": {
+      "x": 2,
+      "y": 5,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "mouth": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "weight": 0,
+      "size": 0
+    },
+    "yawServo": {
+      "angle": 2,
+      "speed": 800
+    },
+    "pitchServo": {
+      "angle": 748,
+      "speed": 800
+    },
+    "leftRgbColor": "#B9B9B9",
+    "rightRgbColor": "#CDCDCD",
+    "durationMs": 40
+  },
+  {
+    "leftEye": {
+      "x": 8,
+      "y": 15,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "rightEye": {
+      "x": 8,
+      "y": 15,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "mouth": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "weight": 39,
+      "size": 0
+    },
+    "yawServo": {
+      "angle": 8,
+      "speed": 800
+    },
+    "pitchServo": {
+      "angle": 719,
+      "speed": 800
+    },
+    "leftRgbColor": "#C2C2C2",
+    "rightRgbColor": "#D4D4D4",
+    "durationMs": 40
+  },
+  {
+    "leftEye": {
+      "x": -30,
+      "y": 16,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "rightEye": {
+      "x": -30,
+      "y": 16,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "mouth": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "weight": 39,
+      "size": 0
+    },
+    "yawServo": {
+      "angle": -32,
+      "speed": 800
+    },
+    "pitchServo": {
+      "angle": 716,
+      "speed": 800
+    },
+    "leftRgbColor": "#C8C8C8",
+    "rightRgbColor": "#CECECE",
+    "durationMs": 40
+  },
+  {
+    "leftEye": {
+      "x": -32,
+      "y": 10,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "rightEye": {
+      "x": -32,
+      "y": 10,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "mouth": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "weight": 38,
+      "size": 0
+    },
+    "yawServo": {
+      "angle": -34,
+      "speed": 800
+    },
+    "pitchServo": {
+      "angle": 733,
+      "speed": 800
+    },
+    "leftRgbColor": "#C3C3C3",
+    "rightRgbColor": "#CFCFCF",
+    "durationMs": 40
+  },
+  {
+    "leftEye": {
+      "x": -19,
+      "y": -11,
+      "rotation": 0,
+      "weight": 2,
+      "size": 0
+    },
+    "rightEye": {
+      "x": -19,
+      "y": -11,
+      "rotation": 0,
+      "weight": 2,
+      "size": 0
+    },
+    "mouth": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "weight": 39,
+      "size": 0
+    },
+    "yawServo": {
+      "angle": -20,
+      "speed": 800
+    },
+    "pitchServo": {
+      "angle": 789,
+      "speed": 800
+    },
+    "leftRgbColor": "#C6C6C6",
+    "rightRgbColor": "#CFCFCF",
+    "durationMs": 40
+  },
+  {
+    "leftEye": {
+      "x": -12,
+      "y": -8,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "rightEye": {
+      "x": -12,
+      "y": -8,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "mouth": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "weight": 0,
+      "size": 0
+    },
+    "yawServo": {
+      "angle": -13,
+      "speed": 800
+    },
+    "pitchServo": {
+      "angle": 782,
+      "speed": 800
+    },
+    "leftRgbColor": "#C2C2C2",
+    "rightRgbColor": "#D4D4D4",
+    "durationMs": 40
+  },
+  {
+    "leftEye": {
+      "x": 16,
+      "y": 36,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "rightEye": {
+      "x": 16,
+      "y": 36,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "mouth": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "weight": 0,
+      "size": 0
+    },
+    "yawServo": {
+      "angle": 17,
+      "speed": 800
+    },
+    "pitchServo": {
+      "angle": 664,
+      "speed": 800
+    },
+    "leftRgbColor": "#CBCBCB",
+    "rightRgbColor": "#BDBDBD",
+    "durationMs": 40
+  },
+  {
+    "leftEye": {
+      "x": 9,
+      "y": -7,
+      "rotation": 0,
+      "weight": 96,
+      "size": 0
+    },
+    "rightEye": {
+      "x": 9,
+      "y": -7,
+      "rotation": 0,
+      "weight": 96,
+      "size": 0
+    },
+    "mouth": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "weight": 0,
+      "size": 0
+    },
+    "yawServo": {
+      "angle": 9,
+      "speed": 800
+    },
+    "pitchServo": {
+      "angle": 778,
+      "speed": 800
+    },
+    "leftRgbColor": "#C0C0C0",
+    "rightRgbColor": "#C5C5C5",
+    "durationMs": 40
+  },
+  {
+    "leftEye": {
+      "x": 15,
+      "y": -7,
+      "rotation": 0,
+      "weight": 98,
+      "size": 0
+    },
+    "rightEye": {
+      "x": 15,
+      "y": -7,
+      "rotation": 0,
+      "weight": 98,
+      "size": 0
+    },
+    "mouth": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "weight": 0,
+      "size": 0
+    },
+    "yawServo": {
+      "angle": 16,
+      "speed": 800
+    },
+    "pitchServo": {
+      "angle": 780,
+      "speed": 800
+    },
+    "leftRgbColor": "#BCBCBC",
+    "rightRgbColor": "#C9C9C9",
+    "durationMs": 40
+  },
+  {
+    "leftEye": {
+      "x": 24,
+      "y": 11,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "rightEye": {
+      "x": 24,
+      "y": 11,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "mouth": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "weight": 0,
+      "size": 0
+    },
+    "yawServo": {
+      "angle": 26,
+      "speed": 800
+    },
+    "pitchServo": {
+      "angle": 732,
+      "speed": 800
+    },
+    "leftRgbColor": "#C2C2C2",
+    "rightRgbColor": "#C4C4C4",
+    "durationMs": 40
+  },
+  {
+    "leftEye": {
+      "x": 41,
+      "y": 36,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "rightEye": {
+      "x": 41,
+      "y": 36,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "mouth": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "weight": 37,
+      "size": 0
+    },
+    "yawServo": {
+      "angle": 44,
+      "speed": 800
+    },
+    "pitchServo": {
+      "angle": 663,
+      "speed": 800
+    },
+    "leftRgbColor": "#C9C9C9",
+    "rightRgbColor": "#C9C9C9",
+    "durationMs": 40
+  },
+  {
+    "leftEye": {
+      "x": 18,
+      "y": 35,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "rightEye": {
+      "x": 18,
+      "y": 35,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "mouth": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "weight": 39,
+      "size": 0
+    },
+    "yawServo": {
+      "angle": 19,
+      "speed": 800
+    },
+    "pitchServo": {
+      "angle": 666,
+      "speed": 800
+    },
+    "leftRgbColor": "#CACACA",
+    "rightRgbColor": "#CACACA",
+    "durationMs": 40
+  },
+  {
+    "leftEye": {
+      "x": -20,
+      "y": 32,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "rightEye": {
+      "x": -20,
+      "y": 32,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "mouth": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "weight": 38,
+      "size": 0
+    },
+    "yawServo": {
+      "angle": -21,
+      "speed": 800
+    },
+    "pitchServo": {
+      "angle": 675,
+      "speed": 800
+    },
+    "leftRgbColor": "#C6C6C6",
+    "rightRgbColor": "#CDCDCD",
+    "durationMs": 40
+  },
+  {
+    "leftEye": {
+      "x": -5,
+      "y": 29,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "rightEye": {
+      "x": -5,
+      "y": 29,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "mouth": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "weight": 39,
+      "size": 0
+    },
+    "yawServo": {
+      "angle": -5,
+      "speed": 800
+    },
+    "pitchServo": {
+      "angle": 681,
+      "speed": 800
+    },
+    "leftRgbColor": "#C2C2C2",
+    "rightRgbColor": "#D4D4D4",
+    "durationMs": 40
+  },
+  {
+    "leftEye": {
+      "x": -12,
+      "y": -6,
+      "rotation": 0,
+      "weight": 98,
+      "size": 0
+    },
+    "rightEye": {
+      "x": -12,
+      "y": -6,
+      "rotation": 0,
+      "weight": 98,
+      "size": 0
+    },
+    "mouth": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "weight": 35,
+      "size": 0
+    },
+    "yawServo": {
+      "angle": -13,
+      "speed": 800
+    },
+    "pitchServo": {
+      "angle": 776,
+      "speed": 800
+    },
+    "leftRgbColor": "#CBCBCB",
+    "rightRgbColor": "#C3C3C3",
+    "durationMs": 40
+  },
+  {
+    "leftEye": {
+      "x": -19,
+      "y": -8,
+      "rotation": 0,
+      "weight": 99,
+      "size": 0
+    },
+    "rightEye": {
+      "x": -19,
+      "y": -8,
+      "rotation": 0,
+      "weight": 99,
+      "size": 0
+    },
+    "mouth": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "weight": 0,
+      "size": 0
+    },
+    "yawServo": {
+      "angle": -20,
+      "speed": 800
+    },
+    "pitchServo": {
+      "angle": 782,
+      "speed": 800
+    },
+    "leftRgbColor": "#C0C0C0",
+    "rightRgbColor": "#C5C5C5",
+    "durationMs": 40
+  },
+  {
+    "leftEye": {
+      "x": -38,
+      "y": 37,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "rightEye": {
+      "x": -38,
+      "y": 37,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "mouth": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "weight": 38,
+      "size": 0
+    },
+    "yawServo": {
+      "angle": -41,
+      "speed": 800
+    },
+    "pitchServo": {
+      "angle": 662,
+      "speed": 800
+    },
+    "leftRgbColor": "#C6C6C6",
+    "rightRgbColor": "#CDCDCD",
+    "durationMs": 40
+  },
+  {
+    "leftEye": {
+      "x": -32,
+      "y": 30,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "rightEye": {
+      "x": -32,
+      "y": 30,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "mouth": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "weight": 38,
+      "size": 0
+    },
+    "yawServo": {
+      "angle": -34,
+      "speed": 800
+    },
+    "pitchServo": {
+      "angle": 681,
+      "speed": 800
+    },
+    "leftRgbColor": "#C6C6C6",
+    "rightRgbColor": "#CDCDCD",
+    "durationMs": 40
+  },
+  {
+    "leftEye": {
+      "x": 0,
+      "y": 28,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "rightEye": {
+      "x": 0,
+      "y": 28,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "mouth": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "weight": 39,
+      "size": 0
+    },
+    "yawServo": {
+      "angle": 0,
+      "speed": 800
+    },
+    "pitchServo": {
+      "angle": 686,
+      "speed": 800
+    },
+    "leftRgbColor": "#C7C7C7",
+    "rightRgbColor": "#CECECE",
+    "durationMs": 40
+  },
+  {
+    "leftEye": {
+      "x": 15,
+      "y": 7,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "rightEye": {
+      "x": 15,
+      "y": 7,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "mouth": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "weight": 0,
+      "size": 0
+    },
+    "yawServo": {
+      "angle": 16,
+      "speed": 800
+    },
+    "pitchServo": {
+      "angle": 741,
+      "speed": 800
+    },
+    "leftRgbColor": "#C2C2C2",
+    "rightRgbColor": "#D4D4D4",
+    "durationMs": 40
+  },
+  {
+    "leftEye": {
+      "x": 3,
+      "y": 10,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "rightEye": {
+      "x": 3,
+      "y": 10,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "mouth": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "weight": 36,
+      "size": 0
+    },
+    "yawServo": {
+      "angle": 4,
+      "speed": 800
+    },
+    "pitchServo": {
+      "angle": 733,
+      "speed": 800
+    },
+    "leftRgbColor": "#C2C2C2",
+    "rightRgbColor": "#CECECE",
+    "durationMs": 40
+  },
+  {
+    "leftEye": {
+      "x": 17,
+      "y": -12,
+      "rotation": 0,
+      "weight": 96,
+      "size": 0
+    },
+    "rightEye": {
+      "x": 17,
+      "y": -12,
+      "rotation": 0,
+      "weight": 96,
+      "size": 0
+    },
+    "mouth": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "weight": 0,
+      "size": 0
+    },
+    "yawServo": {
+      "angle": 18,
+      "speed": 800
+    },
+    "pitchServo": {
+      "angle": 792,
+      "speed": 800
+    },
+    "leftRgbColor": "#C9C9C9",
+    "rightRgbColor": "#C2C2C2",
+    "durationMs": 40
+  },
+  {
+    "leftEye": {
+      "x": 20,
+      "y": -3,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "rightEye": {
+      "x": 20,
+      "y": -3,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "mouth": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "weight": 0,
+      "size": 0
+    },
+    "yawServo": {
+      "angle": 21,
+      "speed": 800
+    },
+    "pitchServo": {
+      "angle": 769,
+      "speed": 800
+    },
+    "leftRgbColor": "#C6C6C6",
+    "rightRgbColor": "#C0C0C0",
+    "durationMs": 40
+  },
+  {
+    "leftEye": {
+      "x": 20,
+      "y": 10,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "rightEye": {
+      "x": 20,
+      "y": 10,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "mouth": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "weight": 38,
+      "size": 0
+    },
+    "yawServo": {
+      "angle": 21,
+      "speed": 800
+    },
+    "pitchServo": {
+      "angle": 733,
+      "speed": 800
+    },
+    "leftRgbColor": "#CACACA",
+    "rightRgbColor": "#CACACA",
+    "durationMs": 40
+  },
+  {
+    "leftEye": {
+      "x": 17,
+      "y": 25,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "rightEye": {
+      "x": 17,
+      "y": 25,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "mouth": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "weight": 39,
+      "size": 0
+    },
+    "yawServo": {
+      "angle": 18,
+      "speed": 800
+    },
+    "pitchServo": {
+      "angle": 693,
+      "speed": 800
+    },
+    "leftRgbColor": "#CCCCCC",
+    "rightRgbColor": "#CACACA",
+    "durationMs": 40
+  },
+  {
+    "leftEye": {
+      "x": -14,
+      "y": 34,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "rightEye": {
+      "x": -14,
+      "y": 34,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "mouth": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "weight": 36,
+      "size": 0
+    },
+    "yawServo": {
+      "angle": -14,
+      "speed": 800
+    },
+    "pitchServo": {
+      "angle": 670,
+      "speed": 800
+    },
+    "leftRgbColor": "#C7C7C7",
+    "rightRgbColor": "#C9C9C9",
+    "durationMs": 40
+  },
+  {
+    "leftEye": {
+      "x": -21,
+      "y": 20,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "rightEye": {
+      "x": -21,
+      "y": 20,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "mouth": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "weight": 37,
+      "size": 0
+    },
+    "yawServo": {
+      "angle": -23,
+      "speed": 800
+    },
+    "pitchServo": {
+      "angle": 708,
+      "speed": 800
+    },
+    "leftRgbColor": "#CCCCCC",
+    "rightRgbColor": "#C6C6C6",
+    "durationMs": 40
+  },
+  {
+    "leftEye": {
+      "x": -15,
+      "y": 9,
+      "rotation": 0,
+      "weight": 69,
+      "size": 0
+    },
+    "rightEye": {
+      "x": -15,
+      "y": 9,
+      "rotation": 0,
+      "weight": 69,
+      "size": 0
+    },
+    "mouth": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "weight": 38,
+      "size": 0
+    },
+    "yawServo": {
+      "angle": -15,
+      "speed": 800
+    },
+    "pitchServo": {
+      "angle": 736,
+      "speed": 800
+    },
+    "leftRgbColor": "#CCCCCC",
+    "rightRgbColor": "#C7C7C7",
+    "durationMs": 40
+  },
+  {
+    "leftEye": {
+      "x": 0,
+      "y": 21,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "rightEye": {
+      "x": 0,
+      "y": 21,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "mouth": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "weight": 38,
+      "size": 0
+    },
+    "yawServo": {
+      "angle": 0,
+      "speed": 800
+    },
+    "pitchServo": {
+      "angle": 703,
+      "speed": 800
+    },
+    "leftRgbColor": "#CBCBCB",
+    "rightRgbColor": "#C8C8C8",
+    "durationMs": 40
+  },
+  {
+    "leftEye": {
+      "x": -17,
+      "y": 17,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "rightEye": {
+      "x": -17,
+      "y": 17,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "mouth": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "weight": 38,
+      "size": 0
+    },
+    "yawServo": {
+      "angle": -19,
+      "speed": 800
+    },
+    "pitchServo": {
+      "angle": 713,
+      "speed": 800
+    },
+    "leftRgbColor": "#C7C7C7",
+    "rightRgbColor": "#CDCDCD",
+    "durationMs": 40
+  },
+  {
+    "leftEye": {
+      "x": -29,
+      "y": 1,
+      "rotation": 0,
+      "weight": 99,
+      "size": 0
+    },
+    "rightEye": {
+      "x": -29,
+      "y": 1,
+      "rotation": 0,
+      "weight": 99,
+      "size": 0
+    },
+    "mouth": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "weight": 0,
+      "size": 0
+    },
+    "yawServo": {
+      "angle": -31,
+      "speed": 800
+    },
+    "pitchServo": {
+      "angle": 758,
+      "speed": 800
+    },
+    "leftRgbColor": "#BFBFBF",
+    "rightRgbColor": "#C6C6C6",
+    "durationMs": 40
+  },
+  {
+    "leftEye": {
+      "x": -5,
+      "y": -12,
+      "rotation": 0,
+      "weight": 96,
+      "size": 0
+    },
+    "rightEye": {
+      "x": -5,
+      "y": -12,
+      "rotation": 0,
+      "weight": 96,
+      "size": 0
+    },
+    "mouth": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "weight": 0,
+      "size": 0
+    },
+    "yawServo": {
+      "angle": -5,
+      "speed": 800
+    },
+    "pitchServo": {
+      "angle": 792,
+      "speed": 800
+    },
+    "leftRgbColor": "#C3C3C3",
+    "rightRgbColor": "#C3C3C3",
+    "durationMs": 40
+  },
+  {
+    "leftEye": {
+      "x": 3,
+      "y": -4,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "rightEye": {
+      "x": 3,
+      "y": -4,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "mouth": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "weight": 0,
+      "size": 0
+    },
+    "yawServo": {
+      "angle": 3,
+      "speed": 800
+    },
+    "pitchServo": {
+      "angle": 771,
+      "speed": 800
+    },
+    "leftRgbColor": "#BEBEBE",
+    "rightRgbColor": "#C8C8C8",
+    "durationMs": 40
+  },
+  {
+    "leftEye": {
+      "x": 6,
+      "y": 12,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "rightEye": {
+      "x": 6,
+      "y": 12,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "mouth": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "weight": 0,
+      "size": 0
+    },
+    "yawServo": {
+      "angle": 7,
+      "speed": 800
+    },
+    "pitchServo": {
+      "angle": 729,
+      "speed": 800
+    },
+    "leftRgbColor": "#BFBFBF",
+    "rightRgbColor": "#C6C6C6",
+    "durationMs": 40
+  },
+  {
+    "leftEye": {
+      "x": -2,
+      "y": 32,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "rightEye": {
+      "x": -2,
+      "y": 32,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "mouth": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "weight": 39,
+      "size": 0
+    },
+    "yawServo": {
+      "angle": -2,
+      "speed": 800
+    },
+    "pitchServo": {
+      "angle": 675,
+      "speed": 800
+    },
+    "leftRgbColor": "#D1D1D1",
+    "rightRgbColor": "#C4C4C4",
+    "durationMs": 40
+  },
+  {
+    "leftEye": {
+      "x": 14,
+      "y": -2,
+      "rotation": 0,
+      "weight": 98,
+      "size": 0
+    },
+    "rightEye": {
+      "x": 14,
+      "y": -2,
+      "rotation": 0,
+      "weight": 98,
+      "size": 0
+    },
+    "mouth": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "weight": 37,
+      "size": 0
+    },
+    "yawServo": {
+      "angle": 15,
+      "speed": 800
+    },
+    "pitchServo": {
+      "angle": 766,
+      "speed": 800
+    },
+    "leftRgbColor": "#C3C3C3",
+    "rightRgbColor": "#CFCFCF",
+    "durationMs": 40
+  },
+  {
+    "leftEye": {
+      "x": 16,
+      "y": -5,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "rightEye": {
+      "x": 16,
+      "y": -5,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "mouth": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "weight": 0,
+      "size": 0
+    },
+    "yawServo": {
+      "angle": 17,
+      "speed": 800
+    },
+    "pitchServo": {
+      "angle": 773,
+      "speed": 800
+    },
+    "leftRgbColor": "#C5C5C5",
+    "rightRgbColor": "#D0D0D0",
+    "durationMs": 40
+  },
+  {
+    "leftEye": {
+      "x": 35,
+      "y": 11,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "rightEye": {
+      "x": 35,
+      "y": 11,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "mouth": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "weight": 39,
+      "size": 0
+    },
+    "yawServo": {
+      "angle": 37,
+      "speed": 800
+    },
+    "pitchServo": {
+      "angle": 732,
+      "speed": 800
+    },
+    "leftRgbColor": "#CACACA",
+    "rightRgbColor": "#CACACA",
+    "durationMs": 40
+  },
+  {
+    "leftEye": {
+      "x": 13,
+      "y": 13,
+      "rotation": 0,
+      "weight": 1,
+      "size": 0
+    },
+    "rightEye": {
+      "x": 13,
+      "y": 13,
+      "rotation": 0,
+      "weight": 1,
+      "size": 0
+    },
+    "mouth": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "weight": 0,
+      "size": 0
+    },
+    "yawServo": {
+      "angle": 14,
+      "speed": 800
+    },
+    "pitchServo": {
+      "angle": 725,
+      "speed": 800
+    },
+    "leftRgbColor": "#C0C0C0",
+    "rightRgbColor": "#CCCCCC",
+    "durationMs": 40
+  },
+  {
+    "leftEye": {
+      "x": -10,
+      "y": -1,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "rightEye": {
+      "x": -10,
+      "y": -1,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "mouth": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "weight": 35,
+      "size": 0
+    },
+    "yawServo": {
+      "angle": -10,
+      "speed": 800
+    },
+    "pitchServo": {
+      "angle": 762,
+      "speed": 800
+    },
+    "leftRgbColor": "#CECECE",
+    "rightRgbColor": "#C1C1C1",
+    "durationMs": 40
+  },
+  {
+    "leftEye": {
+      "x": -7,
+      "y": 10,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "rightEye": {
+      "x": -7,
+      "y": 10,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "mouth": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "weight": 39,
+      "size": 0
+    },
+    "yawServo": {
+      "angle": -7,
+      "speed": 800
+    },
+    "pitchServo": {
+      "angle": 732,
+      "speed": 800
+    },
+    "leftRgbColor": "#C3C3C3",
+    "rightRgbColor": "#D2D2D2",
+    "durationMs": 40
+  },
+  {
+    "leftEye": {
+      "x": 4,
+      "y": 28,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "rightEye": {
+      "x": 4,
+      "y": 28,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "mouth": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "weight": 38,
+      "size": 0
+    },
+    "yawServo": {
+      "angle": 4,
+      "speed": 800
+    },
+    "pitchServo": {
+      "angle": 685,
+      "speed": 800
+    },
+    "leftRgbColor": "#C7C7C7",
+    "rightRgbColor": "#CCCCCC",
+    "durationMs": 40
+  },
+  {
+    "leftEye": {
+      "x": 1,
+      "y": 37,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "rightEye": {
+      "x": 1,
+      "y": 37,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "mouth": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "weight": 39,
+      "size": 0
+    },
+    "yawServo": {
+      "angle": 1,
+      "speed": 800
+    },
+    "pitchServo": {
+      "angle": 660,
+      "speed": 800
+    },
+    "leftRgbColor": "#C2C2C2",
+    "rightRgbColor": "#D4D4D4",
+    "durationMs": 40
+  },
+  {
+    "leftEye": {
+      "x": -3,
+      "y": 31,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "rightEye": {
+      "x": -3,
+      "y": 31,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "mouth": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "weight": 39,
+      "size": 0
+    },
+    "yawServo": {
+      "angle": -3,
+      "speed": 800
+    },
+    "pitchServo": {
+      "angle": 679,
+      "speed": 800
+    },
+    "leftRgbColor": "#C1C1C1",
+    "rightRgbColor": "#D4D4D4",
+    "durationMs": 40
+  },
+  {
+    "leftEye": {
+      "x": 0,
+      "y": 3,
+      "rotation": 0,
+      "weight": 99,
+      "size": 0
+    },
+    "rightEye": {
+      "x": 0,
+      "y": 3,
+      "rotation": 0,
+      "weight": 99,
+      "size": 0
+    },
+    "mouth": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "weight": 37,
+      "size": 0
+    },
+    "yawServo": {
+      "angle": 0,
+      "speed": 800
+    },
+    "pitchServo": {
+      "angle": 752,
+      "speed": 800
+    },
+    "leftRgbColor": "#C6C6C6",
+    "rightRgbColor": "#CCCCCC",
+    "durationMs": 40
+  },
+  {
+    "leftEye": {
+      "x": 8,
+      "y": -12,
+      "rotation": 0,
+      "weight": 96,
+      "size": 0
+    },
+    "rightEye": {
+      "x": 8,
+      "y": -12,
+      "rotation": 0,
+      "weight": 96,
+      "size": 0
+    },
+    "mouth": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "weight": 0,
+      "size": 0
+    },
+    "yawServo": {
+      "angle": 8,
+      "speed": 800
+    },
+    "pitchServo": {
+      "angle": 792,
+      "speed": 800
+    },
+    "leftRgbColor": "#BFBFBF",
+    "rightRgbColor": "#C7C7C7",
+    "durationMs": 40
+  },
+  {
+    "leftEye": {
+      "x": 41,
+      "y": 37,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "rightEye": {
+      "x": 41,
+      "y": 37,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "mouth": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "weight": 0,
+      "size": 0
+    },
+    "yawServo": {
+      "angle": 44,
+      "speed": 800
+    },
+    "pitchServo": {
+      "angle": 660,
+      "speed": 800
+    },
+    "leftRgbColor": "#C4C4C4",
+    "rightRgbColor": "#C2C2C2",
+    "durationMs": 40
+  },
+  {
+    "leftEye": {
+      "x": 5,
+      "y": 4,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "rightEye": {
+      "x": 5,
+      "y": 4,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "mouth": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "weight": 37,
+      "size": 0
+    },
+    "yawServo": {
+      "angle": 6,
+      "speed": 800
+    },
+    "pitchServo": {
+      "angle": 750,
+      "speed": 800
+    },
+    "leftRgbColor": "#C6C6C6",
+    "rightRgbColor": "#CCCCCC",
+    "durationMs": 40
+  },
+  {
+    "leftEye": {
+      "x": 1,
+      "y": 12,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "rightEye": {
+      "x": 1,
+      "y": 12,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "mouth": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "weight": 39,
+      "size": 0
+    },
+    "yawServo": {
+      "angle": 1,
+      "speed": 800
+    },
+    "pitchServo": {
+      "angle": 728,
+      "speed": 800
+    },
+    "leftRgbColor": "#C5C5C5",
+    "rightRgbColor": "#CFCFCF",
+    "durationMs": 40
+  },
+  {
+    "leftEye": {
+      "x": 1,
+      "y": 11,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "rightEye": {
+      "x": 1,
+      "y": 11,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "mouth": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "weight": 39,
+      "size": 0
+    },
+    "yawServo": {
+      "angle": 2,
+      "speed": 800
+    },
+    "pitchServo": {
+      "angle": 729,
+      "speed": 800
+    },
+    "leftRgbColor": "#C2C2C2",
+    "rightRgbColor": "#D4D4D4",
+    "durationMs": 40
+  },
+  {
+    "leftEye": {
+      "x": 0,
+      "y": 3,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "rightEye": {
+      "x": 0,
+      "y": 3,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "mouth": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "weight": 39,
+      "size": 0
+    },
+    "yawServo": {
+      "angle": 0,
+      "speed": 800
+    },
+    "pitchServo": {
+      "angle": 751,
+      "speed": 800
+    },
+    "leftRgbColor": "#C1C1C1",
+    "rightRgbColor": "#D4D4D4",
+    "durationMs": 40
+  },
+  {
+    "leftEye": {
+      "x": -3,
+      "y": -12,
+      "rotation": 0,
+      "weight": 97,
+      "size": 0
+    },
+    "rightEye": {
+      "x": -3,
+      "y": -12,
+      "rotation": 0,
+      "weight": 97,
+      "size": 0
+    },
+    "mouth": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "weight": 36,
+      "size": 0
+    },
+    "yawServo": {
+      "angle": -4,
+      "speed": 800
+    },
+    "pitchServo": {
+      "angle": 792,
+      "speed": 800
+    },
+    "leftRgbColor": "#C3C3C3",
+    "rightRgbColor": "#CDCDCD",
+    "durationMs": 40
+  },
+  {
+    "leftEye": {
+      "x": -12,
+      "y": -2,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "rightEye": {
+      "x": -12,
+      "y": -2,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "mouth": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "weight": 0,
+      "size": 0
+    },
+    "yawServo": {
+      "angle": -13,
+      "speed": 800
+    },
+    "pitchServo": {
+      "angle": 766,
+      "speed": 800
+    },
+    "leftRgbColor": "#C6C6C6",
+    "rightRgbColor": "#CDCDCD",
+    "durationMs": 40
+  },
+  {
+    "leftEye": {
+      "x": -39,
+      "y": 15,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "rightEye": {
+      "x": -39,
+      "y": 15,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "mouth": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "weight": 0,
+      "size": 0
+    },
+    "yawServo": {
+      "angle": -42,
+      "speed": 800
+    },
+    "pitchServo": {
+      "angle": 719,
+      "speed": 800
+    },
+    "leftRgbColor": "#BCBCBC",
+    "rightRgbColor": "#C9C9C9",
+    "durationMs": 40
+  },
+  {
+    "leftEye": {
+      "x": -20,
+      "y": -1,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "rightEye": {
+      "x": -20,
+      "y": -1,
+      "rotation": 0,
+      "weight": 100,
+      "size": 0
+    },
+    "mouth": {
+      "x": 0,
+      "y": 0,
+      "rotation": 0,
+      "weight": 0,
+      "size": 0
+    },
+    "yawServo": {
+      "angle": -21,
+      "speed": 800
+    },
+    "pitchServo": {
+      "angle": 762,
+      "speed": 800
+    },
+    "leftRgbColor": "#BABABA",
+    "rightRgbColor": "#CCCCCC",
+    "durationMs": 40
+  }
+]
+</script>
+<!-- KEYFRAMES:END -->
+    <div class="kv" id="timelineState">待播放</div>
+  </section>
+
+  <footer>
+    规范：<span class="mono">docs/spec/06-表情参数模型.md</span>（§2 极性表 · §3 默认值 · §6.2 渲染几何事实表 · §8 覆盖事实）<br/>
+    校验：<span class="mono">py -3.12 prototype/tools/check_renderer.py</span>（默认值 / 极性 / 系数 / JS 函数存在性 + 3 个变异用例）<br/>
+    数据：时间轴数据由 <span class="mono">prototype/tools/extract_keyframes.py</span> 从 r59 真实 0x14 关键帧抽 60 帧内联注入
+  </footer>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ===================================================================
+     §1 常量（全部来自固件，改动前先改 spec/06）
+     =================================================================== */
+
+  /* ±100 JSON 单位 ↔ ±16 像素 ⇒ 1 px = 6.25 JSON 单位
+     出处：eyes.cpp:14-15,64-65 / mouth.cpp:13-14,42-43 */
+  const UNITS_PER_PX = 6.25;
+
+  /* 设备画布 320×240，出处：default.cpp:13-15 */
+  const CANVAS_W = 320;
+  const CANVAS_H = 240;
+
+  /* 眼睛基准（相对面板中心）：左 -70 / 右 +70 / y -16，出处：eyes.cpp:13,63-65 */
+  const EYE_BASE_LEFT_X = -70;
+  const EYE_BASE_RIGHT_X = 70;
+  const EYE_BASE_Y = -16;
+
+  /* 嘴基准（相对面板中心）：(0, 26)，出处：mouth.cpp:12,42-43 */
+  const MOUTH_BASE_X = 0;
+  const MOUTH_BASE_Y = 26;
+
+  /* 眼睛直径限幅 (8, 32)，出处：eyes.cpp:16,137 */
+  const EYE_SIZE_MIN = 8;
+  const EYE_SIZE_MAX = 32;
+
+  /* 位置偏移限幅 ±16 px，出处：eyes.cpp:14-15,64-65 / mouth.cpp:13-14 */
+  const POS_OFFSET_MIN = -16;
+  const POS_OFFSET_MAX = 16;
+
+  /* 规范默认值，出处：eyes.cpp:46-49 / mouth.cpp:28-30 / spec/06 §3 */
+  const DEFAULT_PARAMS = {
+    leftEye:  { x: 0, y: 0, rotation: 0, weight: 100, size: 0 },
+    rightEye: { x: 0, y: 0, rotation: 0, weight: 100, size: 0 },
+    mouth:    { x: 0, y: 0, rotation: 0, weight: 0,   size: 0 }
+  };
+
+  /* 固件六情绪的眼睛参数（固件事实），出处：eyes.cpp:102-123
+     注意：嘴在固件里没有情绪表（DefaultMouth 未覆写 setEmotion） */
+  const EMOTIONS = {
+    Neutral: { weight: 100, rotation: 0 },
+    Happy:   { weight: 72,  rotation: 1550 },
+    Angry:   { weight: 70,  rotation: 450 },
+    Sad:     { weight: 70,  rotation: -400 },
+    Doubt:   { weight: 75,  rotation: 0 },
+    Sleepy:  { weight: 35,  rotation: -50 }
+  };
+
+  /* ===================================================================
+     §2 几何函数（与 spec/06 §6.2 一一对应）
+        —— check_renderer.py 会逐个求值核对
+     =================================================================== */
+
+  /* 固件 map_range：整数除法（截断），出处 base.hpp:40-48 */
+  function mapRange(value, inMin, inMax, outMin, outMax){
+    if (inMax === inMin) { return outMin; }
+    return outMin + Math.trunc((value - inMin) * (outMax - outMin) / (inMax - inMin));
+  }
+
+  /* JSON 单位 → 像素 */
+  function unitToPx(unit){
+    return unit / UNITS_PER_PX;
+  }
+
+  /* 像素 → JSON 单位 */
+  function pxToUnit(px){
+    return px * UNITS_PER_PX;
+  }
+
+  /* 固件钳位，出处 element.h:26-30,41-44 / feature.h:22-25,36-39 */
+  function clampInt(value, lo, hi){
+    if (value < lo) { return lo; }
+    if (value > hi) { return hi; }
+    return value;
+  }
+
+  /* 眼睛直径：8 + (size+100)*24/200，出处 eyes.cpp:137 */
+  function eyeDiameter(size){
+    return mapRange(size, -100, 100, EYE_SIZE_MIN, EYE_SIZE_MAX);
+  }
+
+  /* 眼睑 y 偏移：-map_range(weight, 0, 100, 0, 眼径)
+     ⇒ weight 越大，眼睑越往上 ⇒ 越睁开。出处 eyes.cpp:75 */
+  function eyeLidOffsetY(eyeD, weight){
+    return -mapRange(weight, 0, 100, 0, eyeD);
+  }
+
+  /* 眼睛基准 x（相对面板中心） */
+  function eyeBaseX(isLeft){
+    return isLeft ? EYE_BASE_LEFT_X : EYE_BASE_RIGHT_X;
+  }
+
+  /* 眼睛基准 y */
+  function eyeBaseY(){
+    return EYE_BASE_Y;
+  }
+
+  /* 位置单位 → 像素偏移，出处 eyes.cpp:64-65 / mouth.cpp:42-43 */
+  function positionOffsetPx(unit){
+    return mapRange(unit, -100, 100, POS_OFFSET_MIN, POS_OFFSET_MAX);
+  }
+
+  /* 眼睛中心（画布坐标） */
+  function eyeCenterX(isLeft, unitX){
+    return CANVAS_W / 2 + eyeBaseX(isLeft) + positionOffsetPx(unitX);
+  }
+
+  function eyeCenterY(unitY){
+    return CANVAS_H / 2 + eyeBaseY() + positionOffsetPx(unitY);
+  }
+
+  /* 嘴中心（画布坐标） */
+  function mouthCenterX(unitX){
+    return CANVAS_W / 2 + MOUTH_BASE_X + positionOffsetPx(unitX);
+  }
+
+  function mouthCenterY(unitY){
+    return CANVAS_H / 2 + MOUTH_BASE_Y + positionOffsetPx(unitY);
+  }
+
+  /* 嘴的三个尺寸，出处 mouth.cpp:52-54 */
+  function mouthWidth(weight){
+    return mapRange(weight, 0, 100, 90, 60);
+  }
+
+  function mouthHeight(weight){
+    return mapRange(weight, 0, 100, 6, 50);
+  }
+
+  function mouthRadius(weight){
+    return mapRange(weight, 0, 100, 0, 16);
+  }
+
+  /* rotation 单位 0.1 度 → 度 */
+  function rotationDeg(rotation){
+    return rotation / 10;
+  }
+
+  /* ===================================================================
+     §3 状态
+     =================================================================== */
+
+  /* sent = 我们下发的参数（App 轨画这个）
+     device = 设备实际显示的参数（设备轨画这个）= sent ⊕ 设备自身 modifier 覆盖 */
+  let sentParams = cloneParams(DEFAULT_PARAMS);
+  let deviceParams = cloneParams(DEFAULT_PARAMS);
+
+  let decayTimer = null;
+  let emotionTimer = null;
+  let playTimer = null;
+
+  function cloneParams(p){
+    return {
+      leftEye:  { x: p.leftEye.x,  y: p.leftEye.y,  rotation: p.leftEye.rotation,  weight: p.leftEye.weight,  size: p.leftEye.size },
+      rightEye: { x: p.rightEye.x, y: p.rightEye.y, rotation: p.rightEye.rotation, weight: p.rightEye.weight, size: p.rightEye.size },
+      mouth:    { x: p.mouth.x,    y: p.mouth.y,    rotation: p.mouth.rotation,    weight: p.mouth.weight,    size: p.mouth.size }
+    };
+  }
+
+  /* ===================================================================
+     §4 绘制（线框）
+     =================================================================== */
+
+  function fmt(n){
+    return String(n);
+  }
+
+  function svgText(x, y, str, color){
+    return '<text x="' + x + '" y="' + y + '" font-family="monospace" font-size="9" fill="' + (color || "#5c5c5c") + '">' + str + '</text>';
+  }
+
+  /* 画一个轨道。params = 该轨道当前应显示的参数 */
+  function drawFace(svg, params, opts){
+    opts = opts || {};
+    const out = [];
+
+    out.push('<rect x="0.5" y="0.5" width="' + (CANVAS_W - 1) + '" height="' + (CANVAS_H - 1) + '" fill="#ffffff" stroke="#262626" stroke-width="1"/>');
+    out.push('<line x1="' + (CANVAS_W / 2) + '" y1="0" x2="' + (CANVAS_W / 2) + '" y2="' + CANVAS_H + '" stroke="#e0e0e0" stroke-width="1"/>');
+    out.push('<line x1="0" y1="' + (CANVAS_H / 2) + '" x2="' + CANVAS_W + '" y2="' + (CANVAS_H / 2) + '" stroke="#e0e0e0" stroke-width="1"/>');
+    out.push(svgText(4, 11, '320 x 240'));
+
+    const geom = buildFace(params);
+
+    ['leftEye', 'rightEye'].forEach(function(key, idx){
+      const g = geom[key];
+      const label = (key === 'leftEye' ? 'L' : 'R');
+      out.push('<g transform="translate(' + g.cx + ' ' + g.cy + ') rotate(' + g.deg + ')">');
+      out.push('<circle cx="0" cy="0" r="' + (g.d / 2) + '" fill="none" stroke="#262626" stroke-width="1"/>');
+      out.push('<rect x="' + (-g.d / 2) + '" y="' + (-g.d / 2 + g.lidY) + '" width="' + g.d + '" height="' + g.d + '" fill="none" stroke="#9a9a9a" stroke-width="1" stroke-dasharray="3 2"/>');
+      out.push('<circle cx="0" cy="0" r="1.2" fill="#262626"/>');
+      out.push('</g>');
+      out.push(svgText(g.cx - 22, g.cy - g.d / 2 - 6, label + ' w=' + fmt(params[key].weight) + ' r=' + fmt(params[key].rotation), '#262626'));
+    });
+
+    const m = geom.mouth;
+    out.push('<g transform="translate(' + m.cx + ' ' + m.cy + ') rotate(' + m.deg + ')">');
+    out.push('<rect x="' + (-m.w / 2) + '" y="' + (-m.h / 2) + '" width="' + m.w + '" height="' + m.h + '" fill="none" stroke="#262626" stroke-width="1"/>');
+    out.push('<circle cx="0" cy="0" r="1.2" fill="#262626"/>');
+    out.push('</g>');
+    out.push(svgText(m.cx - 22, m.cy + m.h / 2 + 13, 'M w=' + fmt(params.mouth.weight) + ' r=' + fmt(params.mouth.rotation), '#262626'));
+
+    if (opts.note){
+      out.push(svgText(4, CANVAS_H - 5, opts.note, '#9a9a9a'));
+    }
+
+    svg.innerHTML = out.join('');
+    return geom;
+  }
+
+  /* 由参数算出全部像素几何 —— spec/06 §6.2 的可执行版 */
+  function buildFace(params){
+    const ld = eyeDiameter(params.leftEye.size);
+    const rd = eyeDiameter(params.rightEye.size);
+    return {
+      leftEye: {
+        cx: eyeCenterX(true, params.leftEye.x),
+        cy: eyeCenterY(params.leftEye.y),
+        d: ld,
+        lidY: eyeLidOffsetY(ld, params.leftEye.weight),
+        deg: rotationDeg(params.leftEye.rotation)
+      },
+      rightEye: {
+        cx: eyeCenterX(false, params.rightEye.x),
+        cy: eyeCenterY(params.rightEye.y),
+        d: rd,
+        lidY: eyeLidOffsetY(rd, params.rightEye.weight),
+        deg: rotationDeg(params.rightEye.rotation)
+      },
+      mouth: {
+        cx: mouthCenterX(params.mouth.x),
+        cy: mouthCenterY(params.mouth.y),
+        w: mouthWidth(params.mouth.weight),
+        h: mouthHeight(params.mouth.weight),
+        r: mouthRadius(params.mouth.weight),
+        deg: rotationDeg(params.mouth.rotation)
+      }
+    };
+  }
+
+  function fillGeomTable(tbl, geom, params){
+    const tb = tbl.querySelector('tbody');
+    const rows = [
+      ['leftEye', geom.leftEye, params.leftEye],
+      ['rightEye', geom.rightEye, params.rightEye],
+      ['mouth', geom.mouth, params.mouth]
+    ];
+    let html = '';
+    rows.forEach(function(row){
+      const g = row[1];
+      const p = row[2];
+      const isMouth = row[0] === 'mouth';
+      html += '<tr><td>' + row[0] + '</td>';
+      html += '<td>' + (Math.round(g.cx * 100) / 100) + ',' + (Math.round(g.cy * 100) / 100) + '</td>';
+      html += '<td>' + (isMouth ? '-' : g.d) + '</td>';
+      html += '<td>' + (isMouth ? '-' : g.lidY) + '</td>';
+      html += '<td>' + (isMouth ? g.w : '-') + '</td>';
+      html += '<td>' + (isMouth ? g.h : '-') + '</td>';
+      html += '<td>' + (isMouth ? g.r : '-') + '</td>';
+      html += '<td>' + p.rotation + '</td></tr>';
+    });
+    tb.innerHTML = html;
+  }
+
+  function render(){
+    const gDev = drawFace(document.getElementById('svgDevice'), deviceParams, { note: 'device' });
+    const gApp = drawFace(document.getElementById('svgApp'), sentParams, { note: 'app (mirror of sent)' });
+    fillGeomTable(document.getElementById('tblDevice'), gDev, deviceParams);
+    fillGeomTable(document.getElementById('tblApp'), gApp, sentParams);
+  }
+
+  /* ===================================================================
+     §5 参数面板
+     =================================================================== */
+
+  const PARAM_SPEC = [
+    { key: 'leftEye',  label: 'leftEye' },
+    { key: 'rightEye', label: 'rightEye' },
+    { key: 'mouth',    label: 'mouth' }
+  ];
+
+  const PARAM_FIELDS = [
+    { name: 'x',        min: -100, max: 100,  step: 1 },
+    { name: 'y',        min: -100, max: 100,  step: 1 },
+    { name: 'rotation', min: -3600, max: 3600, step: 10 },
+    { name: 'weight',   min: 0,    max: 100,  step: 1 },
+    { name: 'size',     min: -100, max: 100,  step: 1 }
+  ];
+
+  function buildPanel(){
+    const host = document.getElementById('panel');
+    let html = '';
+    PARAM_SPEC.forEach(function(el){
+      html += '<div class="el"><h3>' + el.label + '</h3>';
+      PARAM_FIELDS.forEach(function(f){
+        html += '<div class="row"><span>' + f.name + '</span>';
+        html += '<input type="range" id="p_' + el.key + '_' + f.name + '" min="' + f.min + '" max="' + f.max + '" step="' + f.step + '" value="0">';
+        html += '<span class="v" id="v_' + el.key + '_' + f.name + '">0</span></div>';
+      });
+      html += '</div>';
+    });
+    host.innerHTML = html;
+
+    PARAM_SPEC.forEach(function(el){
+      PARAM_FIELDS.forEach(function(f){
+        const input = document.getElementById('p_' + el.key + '_' + f.name);
+        input.addEventListener('input', function(){
+          const v = parseInt(input.value, 10);
+          document.getElementById('v_' + el.key + '_' + f.name).textContent = String(v);
+          sentParams[el.key][f.name] = v;
+          deviceParams[el.key][f.name] = v;
+          render();
+          setDeviceNote('参数已改：' + el.key + '.' + f.name + ' = ' + v + '（两轨同时生效）');
+        });
+      });
+    });
+    syncPanel();
+  }
+
+  function syncPanel(){
+    PARAM_SPEC.forEach(function(el){
+      PARAM_FIELDS.forEach(function(f){
+        const input = document.getElementById('p_' + el.key + '_' + f.name);
+        if (!input) { return; }
+        input.value = String(sentParams[el.key][f.name]);
+        document.getElementById('v_' + el.key + '_' + f.name).textContent = String(sentParams[el.key][f.name]);
+      });
+    });
+  }
+
+  function buildEmotionChips(){
+    const host = document.getElementById('emotions');
+    let html = '';
+    Object.keys(EMOTIONS).forEach(function(name){
+      html += '<button class="chip" data-emo="' + name + '" aria-pressed="false">' + name + '</button>';
+    });
+    host.innerHTML = html;
+    Array.prototype.forEach.call(host.querySelectorAll('button'), function(btn){
+      btn.addEventListener('click', function(){ applyEmotion(btn.getAttribute('data-emo')); });
+    });
+  }
+
+  /* 情绪只改眼睛的 weight/rotation（固件事实）。嘴与 x/y/size 待拍板，保持不变。 */
+  function applyEmotion(name){
+    const e = EMOTIONS[name];
+    if (!e) { return; }
+    sentParams.leftEye.weight = e.weight;
+    sentParams.leftEye.rotation = e.rotation;
+    sentParams.rightEye.weight = e.weight;
+    sentParams.rightEye.rotation = -e.rotation;
+    deviceParams.leftEye.weight = e.weight;
+    deviceParams.leftEye.rotation = e.rotation;
+    deviceParams.rightEye.weight = e.weight;
+    deviceParams.rightEye.rotation = -e.rotation;
+    syncPanel();
+    render();
+    Array.prototype.forEach.call(document.getElementById('emotions').querySelectorAll('button'), function(b){
+      b.setAttribute('aria-pressed', b.getAttribute('data-emo') === name ? 'true' : 'false');
+    });
+    setDeviceNote('情绪 ' + name + '：只改了眼睛 weight/rotation（固件事实 eyes.cpp:87-124）。嘴的语义待拍板 P-1。');
+  }
+
+  function setDeviceNote(text){
+    document.getElementById('noteDevice').textContent = text;
+    document.getElementById('noteApp').textContent = 'App 轨 = 我们下发的参数（镜子）。' + text;
+  }
+
+  /* ===================================================================
+     §6 覆盖事实演示
+     =================================================================== */
+
+  /* 事实 1：idle_expression 在 500 ms 首次触发，之后 2000~6000 ms 随机
+     事实 1b：blink 在 5200 ms 闭眼 200 ms，闭眼时双眼 weight 被写成 25
+     出处：idle_expression.h:21,24,51-59 / blink.h:25,83 */
+  const DECAY_EVENTS = [
+    { t: 500,   label: 'idle_expression 首次触发：70% 眼神游离（双眼 setPosition）' },
+    { t: 2000,  label: '保活窗口边界：远程表情必须已重发一次（周期 < 2000 ms）' },
+    { t: 5200,  label: 'blink 闭眼：双眼 weight 被写成 25（200 ms）' },
+    { t: 5400,  label: 'blink 睁眼：写回闭眼瞬间备份的 weight' }
+  ];
+
+  /* 事实 2：hello / hi / love → TimedEmotionModifier(Happy, 2000)
+     写的是同一批 weight/rotation ⇒ 覆盖我们下发的值 */
+  const EMOTION_OVERRIDE = { weight: 72, rotation: 1550, durationMs: 2000 };
+
+  function runDecay(){
+    stopAll();
+    const base = cloneParams(sentParams);
+    const t0 = Date.now();
+    deviceParams = cloneParams(base);
+    setDeviceNote('设备轨开始演：idle_expression → blink 覆盖（App 轨保持我们下发的参数）');
+
+    decayTimer = setInterval(function(){
+      const el = Date.now() - t0;
+      deviceParams = cloneParams(base);
+      if (el >= 500){
+        /* 眼神游离：固件取 rand(-20,20) / rand(-15,15)，此处用固定演示值 */
+        deviceParams.leftEye.x = 20;
+        deviceParams.rightEye.x = 20;
+        deviceParams.leftEye.y = -15;
+        deviceParams.rightEye.y = -15;
+        deviceParams.mouth.y = 10;
+      }
+      if (el >= 5200 && el < 5400){
+        deviceParams.leftEye.weight = 25;
+        deviceParams.rightEye.weight = 25;
+      }
+      render();
+      drawTimeline(currentTimelineMode, el);
+      document.getElementById('timelineState').textContent =
+        '覆盖演示 t=' + el + ' ms　' + describeEvent(el);
+      if (el >= 6000){
+        stopAll();
+        deviceParams = cloneParams(base);
+        render();
+        document.getElementById('timelineState').textContent = '覆盖演示结束（6 s）';
+        setDeviceNote('演示结束。注意：远程表情一旦不保活，最终就会被设备改掉。');
+      }
+    }, 40);
+  }
+
+  function describeEvent(el){
+    if (el < 500) { return '无事件（我们下发的参数还在）'; }
+    if (el < 2000) { return 'idle_expression 已改写双眼位置 ⇒ 两轨分叉'; }
+    if (el < 5200) { return '分叉中（位置被 idle 改写）'; }
+    if (el < 5400) { return 'blink：双眼 weight = 25 ⇒ 两轨分叉'; }
+    return 'blink 已恢复，但位置分叉仍在';
+  }
+
+  /* 事实 2 */
+  function runEmotionOverride(){
+    stopAll();
+    const base = cloneParams(deviceParams);
+    const t0 = Date.now();
+    setDeviceNote('设备端收到含 hello / hi / love 的文本 → TimedEmotionModifier(Happy, 2000)');
+    emotionTimer = setInterval(function(){
+      const el = Date.now() - t0;
+      deviceParams = cloneParams(base);
+      if (el < EMOTION_OVERRIDE.durationMs){
+        deviceParams.leftEye.weight = EMOTION_OVERRIDE.weight;
+        deviceParams.leftEye.rotation = EMOTION_OVERRIDE.rotation;
+        deviceParams.rightEye.weight = EMOTION_OVERRIDE.weight;
+        deviceParams.rightEye.rotation = -EMOTION_OVERRIDE.rotation;
+      }
+      render();
+      drawTimeline(currentTimelineMode, el);
+      document.getElementById('timelineState').textContent =
+        '情绪覆盖 t=' + el + ' / ' + EMOTION_OVERRIDE.durationMs + ' ms　' +
+        (el < EMOTION_OVERRIDE.durationMs ? '设备轨眼睛被改写成 Happy' : '已恢复');
+      if (el >= EMOTION_OVERRIDE.durationMs){
+        stopAll();
+        deviceParams = cloneParams(base);
+        render();
+        document.getElementById('timelineState').textContent = '情绪覆盖结束（2000 ms）';
+        setDeviceNote('2000 ms 后设备 setEmotion(_prev_emotion) 恢复原情绪。我们的参数需要靠保活重发抢回。');
+      }
+    }, 40);
+  }
+
+  /* ===================================================================
+     §7 0x14 关键帧时间轴
+     =================================================================== */
+
+  let currentTimelineMode = 'decay';
+  let interpolationOn = false;
+
+  function loadTimelineData(){
+    const node = document.getElementById('timeline-data');
+    try {
+      const raw = node.textContent.trim();
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (err) {
+      return [];
+    }
+  }
+
+  function timelineFrames(){
+    return loadTimelineData();
+  }
+
+  /* 插值是我们自己写的；固件播放是硬切（animation.cpp:70-95） */
+  function interpolateParams(a, b, t){
+    const out = cloneParams(a);
+    ['leftEye', 'rightEye', 'mouth'].forEach(function(k){
+      ['x', 'y', 'rotation', 'weight', 'size'].forEach(function(f){
+        out[k][f] = Math.round(a[k][f] + (b[k][f] - a[k][f]) * t);
+      });
+    });
+    return out;
+  }
+
+  function playTimeline(){
+    stopAll();
+    const frames = timelineFrames();
+    if (frames.length === 0){
+      document.getElementById('timelineState').textContent =
+        '没有关键帧数据。先跑：py -3.12 prototype/tools/extract_keyframes.py';
+      return;
+    }
+    currentTimelineMode = 'play';
+    const t0 = Date.now();
+    let total = 0;
+    frames.forEach(function(f){ total += (f.durationMs || 40); });
+
+    playTimer = setInterval(function(){
+      const el = Date.now() - t0;
+      let acc = 0;
+      let idx = frames.length - 1;
+      for (let i = 0; i < frames.length; i++){
+        const d = frames[i].durationMs || 40;
+        if (el < acc + d) { idx = i; break; }
+        acc += d;
+      }
+      const cur = frames[idx];
+      const nxt = frames[Math.min(idx + 1, frames.length - 1)];
+      const d = cur.durationMs || 40;
+      const local = (el - acc) / d;
+
+      if (interpolationOn && idx < frames.length - 1){
+        /* 这一段是我们自己插的：固件没有（animation.cpp:70-95 硬切） */
+        const p = interpolateParams(frameToParams(cur), frameToParams(nxt), local);
+        deviceParams = cloneParams(p);
+        sentParams = cloneParams(p);
+      } else {
+        deviceParams = cloneParams(frameToParams(cur));
+        sentParams = cloneParams(frameToParams(cur));
+      }
+      syncPanel();
+      render();
+      drawTimeline('play', el, total, idx, frames);
+      document.getElementById('timelineState').textContent =
+        '播放 t=' + el + ' / ' + total + ' ms　帧 #' + (idx + 1) + '/' + frames.length +
+        '　' + (interpolationOn ? '插值=我们自己写的' : '固件原样：硬切');
+      if (el >= total){
+        stopAll();
+        document.getElementById('timelineState').textContent = '播放结束（固件 loop=false，播完即结束）';
+      }
+    }, 16);
+  }
+
+  function frameToParams(f){
+    return {
+      leftEye:  { x: f.leftEye.x,  y: f.leftEye.y,  rotation: f.leftEye.rotation,  weight: f.leftEye.weight,  size: f.leftEye.size },
+      rightEye: { x: f.rightEye.x, y: f.rightEye.y, rotation: f.rightEye.rotation, weight: f.rightEye.weight, size: f.rightEye.size },
+      mouth:    { x: f.mouth.x,    y: f.mouth.y,    rotation: f.mouth.rotation,    weight: f.mouth.weight,    size: f.mouth.size }
+    };
+  }
+
+  function stopAll(){
+    if (decayTimer) { clearInterval(decayTimer); decayTimer = null; }
+    if (emotionTimer) { clearInterval(emotionTimer); emotionTimer = null; }
+    if (playTimer) { clearInterval(playTimer); playTimer = null; }
+  }
+
+  /* 时间轴条：事件刻度 + 关键帧块 + 硬切标记 + 我们插值区间 */
+  function drawTimeline(mode, elapsed, total, curIdx, frames){
+    const W = 1120, H = 120;
+    const out = [];
+    out.push('<rect x="0.5" y="0.5" width="' + (W - 1) + '" height="' + (H - 1) + '" fill="#ffffff" stroke="#d0d0d0" stroke-width="1"/>');
+
+    if (mode === 'play'){
+      const fr = frames || timelineFrames();
+      const sum = total || fr.reduce(function(a, f){ return a + (f.durationMs || 40); }, 0);
+      const px = function(t){ return 8 + (W - 16) * (t / sum); };
+      const bh = 34;
+      fr.forEach(function(f, i){
+        const x0 = px(i === 0 ? 0 : cum(fr, i));
+        const x1 = px(cum(fr, i) + (f.durationMs || 40));
+        out.push('<rect x="' + x0.toFixed(1) + '" y="46" width="' + Math.max(1, x1 - x0 - 1).toFixed(1) + '" height="' + bh + '" fill="' + (i % 2 ? '#f4f4f4' : '#e8e8e8') + '" stroke="#d0d0d0" stroke-width="1"/>');
+        out.push('<line x1="' + x0.toFixed(1) + '" y1="42" x2="' + x0.toFixed(1) + '" y2="' + (46 + bh) + '" stroke="#9a9a9a" stroke-width="1"/>');
+      });
+      out.push(svgText(8, 40, '关键帧块之间 = 固件硬切边界（animation.cpp:70-95）', '#5c5c5c'));
+      out.push(svgText(8, 98, '块与块之间那段平滑 = 我们自己写的插值（固件没有）', '#5c5c5c'));
+      if (elapsed != null){
+        const x = px(elapsed);
+        out.push('<line x1="' + x.toFixed(1) + '" y1="42" x2="' + x.toFixed(1) + '" y2="90" stroke="#262626" stroke-width="1"/>');
+      }
+      if (curIdx != null){
+        out.push(svgText(W - 150, 40, '帧 ' + (curIdx + 1) + ' / ' + fr.length, '#262626'));
+      }
+    } else {
+      const span = 6000;
+      const px = function(t){ return 8 + (W - 16) * (t / span); };
+      DECAY_EVENTS.forEach(function(ev, i){
+        const x = px(ev.t);
+        out.push('<line x1="' + x.toFixed(1) + '" y1="34" x2="' + x.toFixed(1) + '" y2="86" stroke="#5c5c5c" stroke-width="1"/>');
+        out.push(svgText(Math.min(x + 3, W - 210), 30 - (i % 2) * 12, 't=' + ev.t + 'ms ' + ev.label.slice(0, 22), '#262626'));
+      });
+      out.push('<rect x="' + px(0).toFixed(1) + '" y="60" width="' + (px(2000) - px(0)).toFixed(1) + '" height="26" fill="none" stroke="#9a9a9a" stroke-width="1" stroke-dasharray="3 2"/>');
+      out.push(svgText(px(0) + 3, 56, '保活窗口 2000 ms（远程表情必须重发）', '#5c5c5c'));
+      if (elapsed != null){
+        const x = px(Math.min(elapsed, span));
+        out.push('<line x1="' + x.toFixed(1) + '" y1="30" x2="' + x.toFixed(1) + '" y2="90" stroke="#262626" stroke-width="1"/>');
+      }
+    }
+    document.getElementById('svgTimeline').innerHTML = out.join('');
+  }
+
+  function cum(frames, i){
+    let s = 0;
+    for (let k = 0; k < i; k++) { s += (frames[k].durationMs || 40); }
+    return s;
+  }
+
+  /* ===================================================================
+     §8 绑定
+     =================================================================== */
+
+  function bind(){
+    document.getElementById('btnDecay').addEventListener('click', runDecay);
+    document.getElementById('btnEmotion').addEventListener('click', runEmotionOverride);
+    document.getElementById('btnPlay').addEventListener('click', playTimeline);
+    document.getElementById('btnInterp').addEventListener('click', function(){
+      interpolationOn = !interpolationOn;
+      this.setAttribute('aria-pressed', interpolationOn ? 'true' : 'false');
+      document.getElementById('timelineState').textContent =
+        interpolationOn ? '插值已打开：这段平滑是我们自己写的，固件是硬切。' : '插值已关闭：固件原样硬切。';
+    });
+    document.getElementById('btnReset').addEventListener('click', function(){
+      stopAll();
+      sentParams = cloneParams(DEFAULT_PARAMS);
+      deviceParams = cloneParams(DEFAULT_PARAMS);
+      syncPanel();
+      render();
+      document.getElementById('timelineState').textContent = '已复位到 spec/06 §3 的规范默认值';
+      setDeviceNote('当前 = 我们下发的参数（无覆盖）。');
+    });
+  }
+
+  buildPanel();
+  buildEmotionChips();
+  bind();
+  render();
+  drawTimeline('decay', 0);
+
+  /* 暴露给自动化测试（playwright / check_renderer） */
+  window.__faceDebug = {
+    sentParams: function(){ return sentParams; },
+    deviceParams: function(){ return deviceParams; },
+    buildFace: buildFace,
+    mapRange: mapRange,
+    eyeDiameter: eyeDiameter,
+    eyeLidOffsetY: eyeLidOffsetY,
+    mouthWidth: mouthWidth,
+    mouthHeight: mouthHeight,
+    mouthRadius: mouthRadius,
+    unitToPx: unitToPx,
+    pxToUnit: pxToUnit,
+    UNITS_PER_PX: UNITS_PER_PX,
+    DEFAULT_PARAMS: DEFAULT_PARAMS,
+    EMOTIONS: EMOTIONS,
+    applyEmotion: applyEmotion,
+    runDecay: runDecay,
+    runEmotionOverride: runEmotionOverride,
+    playTimeline: playTimeline,
+    setInterpolation: function(on){ interpolationOn = !!on; },
+    freeze: function(){ stopAll(); },
+    timelineFrames: timelineFrames
+  };
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,127 @@
+# ---------------------------------------------------------------------------
+# StackChan（自研软件栈）—— 版本控制忽略规则
+#
+# ⚠️ 最高优先级：三层分离的「私人层」永不进库。
+#    通用引擎（core/ server/ firmware/ ios/）与通用人格包（personas/）是开源的；
+#    private/ 里的个人定制数据**永不入库**。
+#    详见 PRODUCT.md §7 与 docs/research/19 号 Floor 规范。
+# ---------------------------------------------------------------------------
+
+# --- 私人层：个人数据，永不入库 ---
+private/
+data/
+logs/
+artifacts/
+downloads/
+expression_references/
+expression_style_selection_*/
+stackchan_face_assets/
+sounds/
+private/media/
+
+# --- 密钥与本地配置 ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.mobileprovision
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+sdkconfig.defaults.local
+
+# --- 上游固件依赖（作为引用，不入库）---
+# 官方 m5stack/StackChan 的 xiaozhi-esp32 等第三方组件不入库，
+# 改用 git submodule 或 patch 方式引用（见 docs/research/27 号）。
+firmware/xiaozhi-esp32/
+firmware/managed_components/
+firmware/components/
+firmware/build/
+firmware/build*/
+firmware/sdkconfig
+firmware/sdkconfig.old
+firmware/dependencies.lock
+firmware/.espressif/
+
+# --- 构建产物 ---
+build/
+dist/
+out/
+target/
+DerivedData/
+*.o
+*.a
+*.elf
+*.bin
+*.map
+
+# --- 工具运行产物（不进库）---
+# ⚠️ 工具的演示/自检产物曾落在源码目录（`tools/_demo_tts.wav` 75 KB 出现在
+#    `git status` 未跟踪列表里）⇒ 一律排除；工具本身已改为写系统临时目录。
+tools/*.wav
+tools/*.jsonl
+tools/*.mp3
+
+# --- Python ---
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+.coverage
+htmlcov/
+
+# --- Node ---
+node_modules/
+.pnpm-store/
+*.log
+# ⚠️ 例外：取证留痕的**原始日志**必须进库（它是可复现证据，不是运行时日志）。
+#    `docs/research/75` 号引用它，丢了它文档就只剩「我说我跑过」。
+!docs/research/runs/*.log
+
+# --- UI 截图自查产物（工业化流水线，不入库；assets/screenshots 才是定性截图）---
+prototype/mobile-v2/shots/
+# ⚠️ 手机端 Playwright 回归截图（prototype/mobile/tools/verify_v26_ui.js 的默认落点）
+#    —— 之前没有挡它，`git add .` 会把 6 张 PNG 带进仓。
+prototype/output/
+
+# --- 官方未授权资产（许可红线）---
+# ⚠️ 官方 m5stack/StackChan 的 `app/` 目录**没有 LICENSE 文件**（只有 SPDX 头）
+#    ⇒ 按 docs/research/33 与 docs/spec/00 的 O-12 决策，其资产**永不入库**。
+#    首次公开发布前真实踩到过：`prototype/mobile-v2/assets/` 里躺着一份 3.3 MB
+#    的官方 `stack_chan_model.glb`，首提交差点把它带上去。
+#    本仓的 3D 预览一律用**程序化几何体**（three.js MIT），不需要模型文件。
+stack_chan_model.glb
+*.gltf
+
+# --- 来源未核实的素材 ---
+# `ui-prototype/assets/photo.jpg`：全仓零引用的孤儿图，出处未核实 ⇒ 不随仓分发。
+ui-prototype/assets/photo.jpg
+
+# --- 探针 / 临时文件 ---
+*_probe.txt
+
+# --- 编辑器 / 系统 ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+
+# --- AI 临时产物（集中到 D:\AP\AP7000\ai-workspace，不入库）---
+ai-workspace/
+scratch/
+tmp/
+
+# --- 调研过程中的临时下载物（不进库；文件本身保留，不删）---
+docs/research/_tmp_*
+docs/research/*.tar.gz
+docs/research/*.zip
+**/_tmp_*
+

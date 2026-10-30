@@ -1,0 +1,405 @@
+name: ci
+
+# ============================================================================
+# 自研软件栈的 CI 门禁
+#
+# 与 `ios.yml` 的分工：
+#   * `ios.yml`  —— 需要 macOS + Xcode 的那部分（编译 / swift test / App Icon）
+#   * `ci.yml`   —— **纯 Python / 纯静态**的部分（后端测试、协议与韵律自检、
+#                   文档体检、发布前体检、iOS 原生感判定）
+#
+# ⚠️ 本 workflow 在本机（Windows / 无 Swift）**从未真实跑过** ——
+#    第一次真跑是在 GitHub Actions 的 ubuntu runner 上。
+#    本地复现命令见下面每一步的注释。
+#
+# 设计原则（来自 `docs/spec/07` §一 的事实/契约/决策三分）：
+#   * 门禁只判**事实层**（能不能编过、自检过不过、文档格式合不合规）；
+#   * **决策层**（配色、长相）没有闸门 —— 它们还没拍板，不该被 CI 卡住；
+#   * **不需要任何 API Key**：没有 MINIMAX_API_KEY 时自动走离线桩 provider。
+# ============================================================================
+
+on:
+  push:
+    paths:
+      - "server/**"
+      - "tools/**"
+      - "docs/**"
+      - "prototype/**"
+      - "ios/tools/**"
+      - ".github/workflows/ci.yml"
+  pull_request:
+    paths:
+      - "server/**"
+      - "tools/**"
+      - "docs/**"
+      - "prototype/**"
+      - "ios/tools/**"
+      - ".github/workflows/ci.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+  # ---------------------------------------------------------------------------
+  # 后端基座的单元测试
+  # ---------------------------------------------------------------------------
+  server:
+    name: Server tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r server/requirements.txt
+
+      # 本地复现：py -3.12 server/run_tests.py
+      - name: Run server test suite
+        run: python server/run_tests.py
+
+  # ---------------------------------------------------------------------------
+  # 工具链自检（协议 / 韵律 / 分段 / BLE 验收 / 全链路 Demo）
+  # ---------------------------------------------------------------------------
+  tooling:
+    name: Tooling self-tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # ⚠️ pillow 不能省：make_readme_hero.py / device_screen_sim.py 的自检
+          #    都要真实渲染并回读像素 ⇒ 缺 Pillow 这两个门禁会直接红。
+          python -m pip install numpy scipy websockets bleak cryptography pillow
+
+      # 韵律编译器（YIN 基频 + 韵律 → 42 标量 → PCHIP → 0x14 关键帧）
+      # 本地复现：py -3.12 tools/prosody_to_motion.py --self-test
+      - name: prosody_to_motion.py --self-test
+        run: python tools/prosody_to_motion.py --self-test
+
+      # ⭐ 韵律→身体 管线的离线标定体检（10 项判据：边界伪影 / 静音不张嘴 /
+      #    逐字节可复现 / 42 参数 / 可辨识度 / 淹没指标 / 单调性 / 带宽 / 越界）
+      # 本地复现：py -3.12 tools/check_prosody.py --root .
+      - name: check_prosody.py
+        run: python tools/check_prosody.py --root .
+
+      # 体检器自检（故意做坏的夹具：补零伪影 / 静音张嘴 / 不可复现 / 情绪被抹平）
+      # 本地复现：py -3.12 tools/check_prosody.py --self-test
+      - name: check_prosody.py --self-test
+        run: python tools/check_prosody.py --self-test
+
+      # 0x14 分段下发器（载荷上限 + 定时调度）
+      # 本地复现：py -3.12 tools/dance_chunk.py --self-test
+      - name: dance_chunk.py --self-test
+        run: python tools/dance_chunk.py --self-test
+
+      # 云端 WS 服务端（帧格式 / 协议编解码 / 状态机）
+      # 本地复现：py -3.12 tools/stackchan_server.py --self-test
+      - name: stackchan_server.py --self-test
+        run: python tools/stackchan_server.py --self-test
+
+      # 真机 BLE 一键验收脚本（离线自检部分；真机部分需硬件，不在 CI）
+      # 本地复现：py -3.12 tools/ble_acceptance.py --self-test
+      - name: ble_acceptance.py --self-test
+        run: python tools/ble_acceptance.py --self-test
+
+      # 全链路离线 Demo（文本 → TTS/桩 → 韵律 → 关键帧 → 帧 → 终端画脸）
+      # 本地复现：py -3.12 tools/demo_offline.py --self-test
+      - name: demo_offline.py --self-test
+        run: python tools/demo_offline.py --self-test
+
+      # PCM 音频切片（与 0x14 关键帧同栅格；音画对齐是硬保证）
+      # 本地复现：py -3.12 tools/audio_chunk.py --self-test
+      - name: audio_chunk.py --self-test
+        run: python tools/audio_chunk.py --self-test
+
+      # 端到端闭环：TTS → 韵律 → 关键帧 → 切片 → 音画对账
+      # 用 --provider stub（不需 API Key）；有 key 时可跑真实 MiniMax
+      # 本地复现：py -3.12 tools/tts_align_e2e.py --provider stub
+      - name: tts_align_e2e.py (stub)
+        run: python tools/tts_align_e2e.py --provider stub
+
+      # 端到端离线闭环（server 侧：LLM 桩 → TTS 桩 → 韵律 → 0x14 → 设备模拟）
+      # 本地复现：py -3.12 server/run_tests.py（已在上一个 job 跑过，这里单跑 e2e）
+      - name: Server e2e (offline)
+        run: python -m unittest discover -s server/tests -p "test_e2e_offline.py" -v
+
+      # 文献抓取器自检（离线，不联网；联网抓取需要外网，不进 CI）
+      # 本地复现：py -3.12 tools/fetch_literature.py --self-test
+      - name: fetch_literature.py --self-test
+        run: python tools/fetch_literature.py --self-test
+
+      # Markdown 表格修复器自检（离线）
+      # 本地复现：py -3.12 tools/fix_md_tables.py --self-test
+      - name: fix_md_tables.py --self-test
+        run: python tools/fix_md_tables.py --self-test
+
+      # README hero 动图生成器自检（离线；真实渲染并回读 GIF 帧数）
+      # 本地复现：py -3.12 tools/make_readme_hero.py --self-test
+      - name: make_readme_hero.py --self-test
+        run: python tools/make_readme_hero.py --self-test
+
+      # 端到端延迟基准工具自检（离线；用 stub provider 跑真实计时路径）
+      # 本地复现：py -3.12 tools/bench_latency.py --self-test
+      - name: bench_latency.py --self-test
+        run: python tools/bench_latency.py --self-test
+      # 本地复现：py -3.12 tools/probe_minimax_json.py --self-test
+      - name: probe_minimax_json.py --self-test
+        run: python tools/probe_minimax_json.py --self-test
+      # 本地复现：py -3.12 tools/check_repo_stats.py --self-test
+      - name: check_repo_stats.py --self-test
+        run: python tools/check_repo_stats.py --self-test
+
+      # ⭐ 设备屏 320×240 仿真器的 12 条判据：
+      #    眼睑几何锚定固件**容器内绝对定位**真值（含负向对照：同心误模型必须被判掉）。
+      #    只跑判据、不出图 ⇒ 不依赖 Pillow 以外的任何外部资源。
+      # 本地复现：py -3.12 tools/device_screen_sim.py --self-test
+      - name: device_screen_sim.py --self-test
+        run: python tools/device_screen_sim.py --self-test
+
+      # ⭐ 手机端 UI 规格 ↔ 实现 一致性（15 条判据）：
+      #    Tab 数 / 速度圆圈数 / 初始俯仰 / 摇杆死区与尺寸 / PWA 主题色 /
+      #    版本号三处一致 / 摄像头面板层级 / 静态白名单闭包 / 触控热区 / CSS 变量 /
+      #    SW 预缓存键与实际请求 URL 一致
+      # 本地复现：py -3.12 tools/check_mobile_app.py --root .
+      - name: check_mobile_app.py
+        run: python tools/check_mobile_app.py --root .
+
+      # 体检器自检（把真实现件复制一份逐条改坏 ⇒ 对应判据必须变红）
+      # 本地复现：py -3.12 tools/check_mobile_app.py --self-test
+      - name: check_mobile_app.py --self-test
+        run: python tools/check_mobile_app.py --self-test
+
+      # ⭐ 手机端接口契约三方对齐（8 条判据）：
+      #    手机端 JS 读到的字段 ⇄ 代理净化层放行的字段 ⇄ 本仓后端真实产出的字段。
+      #    三者对不齐时手机端会**静默**显示错内容（拿不到 say / network.ssid …）。
+      # 本地复现：py -3.12 tools/check_mobile_contract.py --root .
+      - name: check_mobile_contract.py
+        run: python tools/check_mobile_contract.py --root .
+
+      # 契约门禁自检（把真实现件复制一份逐条改坏 ⇒ 对应判据必须变红）
+      # 本地复现：py -3.12 tools/check_mobile_contract.py --self-test
+      - name: check_mobile_contract.py --self-test
+        run: python tools/check_mobile_contract.py --self-test
+
+  # ---------------------------------------------------------------------------
+  # 文档与发布前体检（事实层的"闸门"）
+  # ---------------------------------------------------------------------------
+  docs-gate:
+    name: Docs & release gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # 文档格式体检：表格列数一致 / 表格块内无空行 / 无 CRLF / 无 BOM
+      # 本地复现：py -3.12 tools/check_docs.py
+      - name: check_docs.py
+        run: python tools/check_docs.py
+
+      # ⭐ 内部链接体检（命名空间感知）：仓库内路径必须真实存在
+      #    外部命名空间（官方固件仓 / 官方 Go server / 旧 PWA / 本机 Apple 缓存）按约定不算失效。
+      # 本地复现：py -3.12 tools/check_links.py --root .
+      - name: check_links.py
+        run: python tools/check_links.py --root .
+
+      # 链接体检器自检
+      # 本地复现：py -3.12 tools/check_links.py --self-test
+      - name: check_links.py --self-test
+        run: python tools/check_links.py --self-test
+
+      # 发布前体检：LICENSE / NOTICE / 商标声明 / private/ 不入库 / 密钥扫描
+      # 本地复现：py -3.12 tools/repo_release_check.py --root .
+      - name: repo_release_check.py
+        run: python tools/repo_release_check.py --root .
+
+      # 体检器自身的自检（证明它的检查不是摆设）
+      # 本地复现：py -3.12 tools/repo_release_check.py --self-test
+      - name: repo_release_check.py --self-test
+        run: python tools/repo_release_check.py --self-test
+
+      # ⭐ 决策清单 ↔ 施工顺序依赖图 一致性：
+      #    新增决策项却忘了登记「它解锁什么 / 不拍板怎么办」⇒ CI 变红。
+      #    同时守：依赖表必填列不许空、「未验证」小节不许被删、文档不许声称不存在的门禁。
+      # 本地复现：py -3.12 tools/check_decisions.py --root .
+      - name: check_decisions.py
+        run: python tools/check_decisions.py --root .
+
+      # 体检器自检（用故意做坏的夹具证明每一类都能抓到）
+      # 本地复现：py -3.12 tools/check_decisions.py --self-test
+      - name: check_decisions.py --self-test
+        run: python tools/check_decisions.py --self-test
+
+      # ⭐ 引文保真机械校验：
+      #    人眼抄引文的错误率约 10%，且几乎全是「读起来没错」的错
+      #    （缩写主语、U+2010 连字符写成 ASCII、把表格两列拼成一句、凭空加粗…）
+      #    ⇒ 逐条把「」引文做归一化子串比对，找不到就是抄错了。
+      # 本地复现：py -3.12 tools/check_quotes.py --root .
+      - name: check_quotes.py
+        run: python tools/check_quotes.py --root .
+
+      # 体检器自检（故意做坏的夹具：改一个词 / 缩写主语 ⇒ 必须被抓）
+      # 本地复现：py -3.12 tools/check_quotes.py --self-test
+      - name: check_quotes.py --self-test
+        run: python tools/check_quotes.py --self-test
+
+      # ⭐ 引用可溯源性：每个被引的 arXiv ID / DOI 都必须能在**文献留痕快照**或**引用登记表**里找到
+      #    ⇒ 把「禁止凭记忆编造引用」从自觉变成机器门禁
+      # 本地复现：py -3.12 tools/check_citations.py --root .
+      - name: check_citations.py
+        run: python tools/check_citations.py --root .
+
+      # 本地复现：py -3.12 tools/check_citations.py --self-test
+      - name: check_citations.py --self-test
+        run: python tools/check_citations.py --self-test
+
+  # ---------------------------------------------------------------------------
+  # iOS 原生感与工程结构（不需要 macOS 的那部分）
+  # ---------------------------------------------------------------------------
+  ios-static:
+    name: iOS static checks (no Xcode needed)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # SwiftUI 工程结构校验（target 归属 / MsgType 数值 / 协议实现一致性）
+      # 本地复现：py -3.12 ios/tools/validate_project.py
+      - name: validate_project.py
+        run: python ios/tools/validate_project.py
+
+      # 帧规格一致性校验
+      # 本地复现：py -3.12 ios/tools/frame_spec_check.py
+      - name: frame_spec_check.py
+        run: python ios/tools/frame_spec_check.py
+
+      # ⭐ 脸渲染几何同口径校验（Swift 公式 vs 固件 map_range，逐点比对）
+      #    本机无 Swift 编译器 ⇒ 用 Python 复刻固件语义，补上 swift test 的缺口。
+      #    固件源码不可读时降级为 WARN，不阻断 CI。
+      # 本地复现：py -3.12 tools/check_face_geometry.py --root .
+      - name: check_face_geometry.py
+        run: python tools/check_face_geometry.py --root .
+
+      # 同口径校验器自检（含 C++ 除法口径 / map_range 不钳位 / 变异检测）
+      # 本地复现：py -3.12 tools/check_face_geometry.py --self-test
+      - name: check_face_geometry.py --self-test
+        run: python tools/check_face_geometry.py --self-test
+
+      # iOS 原生感判定器（36 项 iOS 特征 + 11 类 Android 味 + T1 官方硬指标）
+      # 出处等级与规则 ID 见 docs/spec/08-iOS官方规范事实层.md
+      # 本地复现：py -3.12 prototype/ios/check_ios.py
+      - name: check_ios.py
+        run: python prototype/ios/check_ios.py
+
+      # 判定器自检（用故意做坏的夹具证明每类缺陷都能抓到）
+      # 本地复现：py -3.12 prototype/ios/check_ios.py --self-test
+      - name: check_ios.py --self-test
+        run: python prototype/ios/check_ios.py --self-test
+
+      # 4 套视觉方案的对比度实算（WCAG 公式；读原型色值，不手抄）
+      # 阈值来自 HIG（T1）：正文 ≥4.5:1 / 大字与非文本 ≥3:1
+      # 本地复现：py -3.12 tools/check_contrast.py --root .
+      - name: check_contrast.py
+        run: python tools/check_contrast.py --root .
+
+      # 对比度计算器自检（含 WCAG 已知答案）
+      # 本地复现：py -3.12 tools/check_contrast.py --self-test
+      - name: check_contrast.py --self-test
+        run: python tools/check_contrast.py --self-test
+
+      # ⭐ 原型 CSS 变量体检：被引用但**未定义**的变量（计算值阶段非法 ⇒ 颜色静默失效）、
+      #    4 套方案 token 集合不一致、iOS 原型与 variants 的强调色漂移
+      # 本地复现：py -3.12 tools/check_css_vars.py --root .
+      - name: check_css_vars.py
+        run: python tools/check_css_vars.py --root .
+
+      # CSS 变量体检器自检（用故意做坏的夹具证明每一类都能抓到）
+      # 本地复现：py -3.12 tools/check_css_vars.py --self-test
+      - name: check_css_vars.py --self-test
+        run: python tools/check_css_vars.py --self-test
+
+  # ---------------------------------------------------------------------------
+  # CI 自身的体检（workflow 从未真跑过 ⇒ 至少保证「声明的东西都在」）
+  # ---------------------------------------------------------------------------
+  ci-self:
+    name: CI definition checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # ⚠️ pyyaml 不能省：check_ci.py 用 PyYAML 解析本 workflow 自身来校验 CI-01，
+      #    缺 PyYAML 时它会报「PyYAML 未安装」⇒ CI-01 FAIL（自举失败）。
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pyyaml
+
+      # workflow 静态体检：引用的脚本必须存在、--self-test 必须真支持、
+      # working-directory / 路径字面量 / 重复 step 名 / 注释与命令是否一致
+      # 本地复现：py -3.12 tools/check_ci.py --root .
+      - name: check_ci.py
+        run: python tools/check_ci.py --root .
+
+      # 体检器自检（用故意做坏的夹具证明每一类都能抓到）
+      # 本地复现：py -3.12 tools/check_ci.py --self-test
+      - name: check_ci.py --self-test
+        run: python tools/check_ci.py --self-test
+
+      # ⭐ 文献留痕并集**未漂移**：重算 3 份留痕的并集，与已落盘的合并文件比对。
+      #    少一条 = 有人删了证据；多一条 = 并集没重算。
+      # 本地复现：py -3.12 tools/fetch_literature.py --merge "docs/research/68-陪伴机器人文献综述.md" "docs/research/69-陪伴机器人文献综述-扩充三主题.md" "docs/research/runs/20261025-0454-lit-all9.md" --out "docs/research/71-陪伴机器人文献综述-九主题合并留痕.md" --check
+      - name: 文献留痕并集未漂移
+        run: >
+          python tools/fetch_literature.py --merge
+          "docs/research/68-陪伴机器人文献综述.md"
+          "docs/research/69-陪伴机器人文献综述-扩充三主题.md"
+          "docs/research/runs/20261025-0454-lit-all9.md"
+          --out "docs/research/71-陪伴机器人文献综述-九主题合并留痕.md"
+          --check
+
+      # ⭐ 十七主题并集未漂移（第三轮扩充批二：8 个新主题 +252 条）
+      #    74 号 = 71 号（9 主题 206 条）+ runs/20261025-0600-lit-new8.md（8 主题 252 条）
+      #    ⇒ 去重后 458 条 / 17 主题
+      # 本地复现：py -3.12 tools/fetch_literature.py --merge "docs/research/71-陪伴机器人文献综述-九主题合并留痕.md" "docs/research/runs/20261025-0600-lit-new8.md" --out "docs/research/74-陪伴机器人文献综述-十七主题合并留痕.md" --check
+      - name: 文献留痕并集未漂移（17 主题）
+        run: >
+          python tools/fetch_literature.py --merge
+          "docs/research/71-陪伴机器人文献综述-九主题合并留痕.md"
+          "docs/research/runs/20261025-0600-lit-new8.md"
+          --out "docs/research/74-陪伴机器人文献综述-十七主题合并留痕.md"
+          --check
+
+      # ⭐ 二十五主题并集未漂移（第四轮扩充批三：8 个新主题）
+      #    83 号 = 74 号（17 主题 458 条）+ runs/20261025-0900-lit-new8b.md（8 主题）
+      #    ⇒ 8 个新主题**每一个都对应一个尚未销账的决策项**
+      # 本地复现：py -3.12 tools/fetch_literature.py --merge "docs/research/74-陪伴机器人文献综述-十七主题合并留痕.md" "docs/research/runs/20261025-0900-lit-new8b.md" --out "docs/research/83-陪伴机器人文献综述-二十五主题合并留痕.md" --check
+      - name: 文献留痕并集未漂移（25 主题）
+        run: >
+          python tools/fetch_literature.py --merge
+          "docs/research/74-陪伴机器人文献综述-十七主题合并留痕.md"
+          "docs/research/runs/20261025-0900-lit-new8b.md"
+          --out "docs/research/83-陪伴机器人文献综述-二十五主题合并留痕.md"
+          --check

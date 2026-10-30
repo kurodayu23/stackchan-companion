@@ -1,0 +1,63 @@
+# ============================================================================
+# 门禁清单 —— **唯一真值**
+#
+# ⭐ 为什么它必须进仓：2026-10-25 一次独立审计发现，同一时刻的「门禁项数」在
+#    不同文档里被写成 28 / 32 / 31 三个数 ⇒ 没有任何一个数是**可核对**的。
+#    把清单收进仓里，项数就变成「行数」这个确定值，
+#    并由 `tools/check_ci.py` 的 CI-11 强制与文档里写的数字一致。
+#
+# 格式：<门禁名><TAB><命令>
+#   * 命令里的路径相对**仓库根**；
+#   * <FW> = 官方固件源码目录（本机路径，不入库）；
+#   * 引号内允许中文文件名。
+#
+# 约定：含 `--self-test` 的行表示「工具自检」⇒ 这些**必须**同时出现在
+#       `.github/workflows/ci.yml` 里（由 CI-11 校验）。
+# ============================================================================
+check_docs	python tools/check_docs.py
+check_links	python tools/check_links.py --root .
+check_links/selftest	python tools/check_links.py --self-test
+repo_release_check	python tools/repo_release_check.py --root .
+repo_release_check/selftest	python tools/repo_release_check.py --self-test
+check_ios	python prototype/ios/check_ios.py
+check_ios/selftest	python prototype/ios/check_ios.py --self-test
+validate_project	python ios/tools/validate_project.py
+frame_spec_check	python ios/tools/frame_spec_check.py
+check_face_geometry	python tools/check_face_geometry.py --root . --firmware <FW>
+check_face_geometry/selftest	python tools/check_face_geometry.py --self-test
+check_contrast	python tools/check_contrast.py --root .
+check_contrast/selftest	python tools/check_contrast.py --self-test
+check_ci	python tools/check_ci.py --root .
+check_ci/selftest	python tools/check_ci.py --self-test
+check_css_vars	python tools/check_css_vars.py --root .
+check_css_vars/selftest	python tools/check_css_vars.py --self-test
+check_decisions	python tools/check_decisions.py --root .
+check_decisions/selftest	python tools/check_decisions.py --self-test
+fetch_literature/selftest	python tools/fetch_literature.py --self-test
+fetch_literature/merge-check	python tools/fetch_literature.py --merge "docs/research/68-陪伴机器人文献综述.md" "docs/research/69-陪伴机器人文献综述-扩充三主题.md" "docs/research/runs/20261025-0454-lit-all9.md" --out "docs/research/71-陪伴机器人文献综述-九主题合并留痕.md" --check
+fetch_literature/merge-check-17	python tools/fetch_literature.py --merge "docs/research/71-陪伴机器人文献综述-九主题合并留痕.md" "docs/research/runs/20261025-0600-lit-new8.md" --out "docs/research/74-陪伴机器人文献综述-十七主题合并留痕.md" --check
+fetch_literature/merge-check-25	python tools/fetch_literature.py --merge "docs/research/74-陪伴机器人文献综述-十七主题合并留痕.md" "docs/research/runs/20261025-0900-lit-new8b.md" --out "docs/research/83-陪伴机器人文献综述-二十五主题合并留痕.md" --check
+fix_md_tables/selftest	python tools/fix_md_tables.py --self-test
+audio_chunk/selftest	python tools/audio_chunk.py --self-test
+prosody_to_motion/selftest	python tools/prosody_to_motion.py --self-test
+stackchan_server/selftest	python tools/stackchan_server.py --self-test
+stackchan_ble/selftest	python tools/stackchan_ble.py selftest
+dance_chunk/selftest	python tools/dance_chunk.py --self-test
+ble_acceptance/selftest	python tools/ble_acceptance.py --self-test
+demo_offline/selftest	python tools/demo_offline.py --self-test
+bench_latency/selftest	python tools/bench_latency.py --self-test
+probe_minimax_json/selftest	python tools/probe_minimax_json.py --self-test
+check_repo_stats	python tools/check_repo_stats.py --root .
+check_repo_stats/selftest	python tools/check_repo_stats.py --self-test
+check_quotes	python tools/check_quotes.py --root .
+check_quotes/selftest	python tools/check_quotes.py --self-test
+check_citations	python tools/check_citations.py --root .
+check_citations/selftest	python tools/check_citations.py --self-test
+check_prosody	python tools/check_prosody.py --root .
+check_prosody/selftest	python tools/check_prosody.py --self-test
+device_screen_sim/selftest	python tools/device_screen_sim.py --self-test
+check_mobile_app	python tools/check_mobile_app.py --root .
+check_mobile_app/selftest	python tools/check_mobile_app.py --self-test
+check_mobile_contract	python tools/check_mobile_contract.py --root .
+check_mobile_contract/selftest	python tools/check_mobile_contract.py --self-test
+server_tests	python server/run_tests.py

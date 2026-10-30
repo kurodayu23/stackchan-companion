@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>小栈 · App 与机器人联动 UI 原型</title>
+<meta name="description" content="StackChan 桌面机器人「小栈」的 iOS App 与机器人屏幕联动交互原型。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="stage-header">
+  <div class="brand">
+    <span class="brand-dot"></span>
+    <h1>小栈 <span>App × 机器人 联动原型</span></h1>
+  </div>
+  <p class="stage-tip">左边操作 App，右边机器人实时响应；点机器人<b>头顶</b>摸头，点<b>屏幕</b>戳脸。</p>
+</header>
+
+<main class="stage">
+
+  <!-- ============ iPhone 17 Pro ============ -->
+  <section class="phone-col" aria-label="iOS App">
+    <div class="phone-scale" id="phoneScale">
+      <div class="phone">
+        <div class="island"></div>
+        <div class="statusbar">
+          <span class="sb-time" id="sbTime">11:20</span>
+          <span class="sb-icons">
+            <svg viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5" width="3" height="7" rx="1"/><rect x="10" y="2.5" width="3" height="9.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+            <svg viewBox="0 0 16 12"><path d="M8 11.5l2.4-2.9a3.6 3.6 0 0 0-4.8 0zM3.7 6.4a6.6 6.6 0 0 1 8.6 0l1.5-1.8a9 9 0 0 0-11.6 0zM.6 3a11 11 0 0 1 14.8 0L16.9 1.3a13.4 13.4 0 0 0-17.8 0z"/></svg>
+            <span class="sb-batt"><i></i></span>
+          </span>
+        </div>
+
+        <div class="app" id="app">
+
+          <!-- ===== 首页 ===== -->
+          <div class="screen active" data-screen="home">
+            <div class="scroll">
+              <div class="home-top">
+                <div>
+                  <p class="hello" id="helloText">下午好</p>
+                  <h2 class="title-xl">小栈在这儿</h2>
+                </div>
+                <div class="conn-chip" id="connChip"><i></i><span id="connText">已连接 · 12ms</span></div>
+              </div>
+
+              <div class="hero-card">
+                <div class="hero-glow"></div>
+                <canvas id="mirrorCanvas" width="320" height="240"></canvas>
+                <div class="hero-meta">
+                  <div>
+                    <p class="meta-label">现在的心情</p>
+                    <p class="meta-value" id="moodText">平静</p>
+                  </div>
+                  <div class="batt-pill"><svg viewBox="0 0 24 24"><path d="M7 4h10v2h2v14H5V6h2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><rect x="8" y="11" width="8" height="6" rx="1" fill="currentColor"/></svg><span>82%</span></div>
+                </div>
+              </div>
+
+              <div class="section-head"><h3>一键表情</h3><button class="link-btn" data-goto="control">更多</button></div>
+              <div class="chip-row" id="quickExpr"></div>
+
+              <div class="section-head"><h3>玩点什么</h3></div>
+              <div class="action-grid">
+                <button class="action-card c-peach" id="actPhoto">
+                  <span class="ac-icon"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg></span>
+                  <b>让它拍照</b><small>倒数 3 秒</small>
+                </button>
+                <button class="action-card c-lav" id="actMirror">
+                  <span class="ac-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="9" cy="10" r="1.3" fill="currentColor"/><circle cx="15" cy="10" r="1.3" fill="currentColor"/><path d="M8.5 14.5q3.5 3 7 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
+                  <b>表情镜像</b><small>它学你的脸</small>
+                </button>
+                <button class="action-card c-mint" id="actTrack">
+                  <span class="ac-icon"><svg viewBox="0 0 24 24"><path d="M4 8V5h3M17 5h3v3M20 16v3h-3M7 19H4v-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg></span>
+                  <b>看着我</b><small id="trackSmall">人脸追踪 · 关</small>
+                </button>
+                <button class="action-card c-sky" data-goto="studio">
+                  <span class="ac-icon"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="4" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><rect x="3" y="11" width="11" height="4" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><rect x="8" y="17" width="13" height="3" rx="1.5" fill="currentColor"/></svg></span>
+                  <b>动作编排</b><small>做一段小表演</small>
+                </button>
+              </div>
+
+              <div class="section-head"><h3>刚刚发生</h3></div>
+              <ul class="feed" id="feed"></ul>
+            </div>
+          </div>
+
+          <!-- ===== 遥控 ===== -->
+          <div class="screen" data-screen="control">
+            <div class="scroll">
+              <h2 class="title-xl">遥控</h2>
+              <div class="segmented" id="ctrlSeg">
+                <button class="on" data-seg="joy">摇杆</button>
+                <button data-seg="mirror">表情镜像</button>
+              </div>
+
+              <div class="seg-pane on" data-pane="joy">
+                <div class="joy-card">
+                  <div class="joy" id="joy">
+                    <div class="joy-ring"></div>
+                    <div class="joy-cross"></div>
+                    <div class="joy-knob" id="joyKnob"></div>
+                  </div>
+                  <div class="joy-readout">
+                    <span>左右 <b id="panVal">0°</b></span>
+                    <span>上下 <b id="tiltVal">0°</b></span>
+                  </div>
+                </div>
+                <div class="motion-row">
+                  <button class="pill-btn" data-motion="nod">点头</button>
+                  <button class="pill-btn" data-motion="shake">摇头</button>
+                  <button class="pill-btn" data-motion="look">环顾</button>
+                  <button class="pill-btn" data-motion="center">回正</button>
+                </div>
+                <div class="toggle-row">
+                  <div><b>人脸追踪</b><small>它会转头一直看着你</small></div>
+                  <label class="switch"><input type="checkbox" id="trackToggle"><span></span></label>
+                </div>
+              </div>
+
+              <div class="seg-pane" data-pane="mirror">
+                <div class="mirror-card">
+                  <div class="mirror-cam">
+                    <svg viewBox="0 0 200 220" class="face-mesh" id="faceMesh">
+                      <ellipse cx="100" cy="112" rx="70" ry="88" class="mesh-line"/>
+                      <path d="M40 95 Q100 70 160 95" class="mesh-line"/>
+                      <path d="M34 130 Q100 150 166 130" class="mesh-line"/>
+                      <path d="M100 26 V198" class="mesh-line"/>
+                      <ellipse id="meshEyeL" cx="72" cy="98" rx="14" ry="8" class="mesh-feature"/>
+                      <ellipse id="meshEyeR" cx="128" cy="98" rx="14" ry="8" class="mesh-feature"/>
+                      <path id="meshMouth" d="M76 158 Q100 170 124 158 Q100 172 76 158" class="mesh-feature"/>
+                      <g class="mesh-dots"></g>
+                    </svg>
+                    <span class="cam-badge"><i></i>前置摄像头 · 追踪中</span>
+                  </div>
+                  <div class="bs-list">
+                    <div class="bs"><span>眨眼</span><div class="bar"><i id="bsBlink"></i></div></div>
+                    <div class="bs"><span>微笑</span><div class="bar"><i id="bsSmile"></i></div></div>
+                    <div class="bs"><span>张嘴</span><div class="bar"><i id="bsJaw"></i></div></div>
+                    <div class="bs"><span>转头</span><div class="bar"><i id="bsYaw"></i></div></div>
+                  </div>
+                  <button class="primary-btn" id="mirrorBtn">开始镜像</button>
+                  <p class="fine">原型里用模拟数据演示；真机用 iPhone 的原深感摄像头捕捉表情。</p>
+                </div>
+              </div>
+
+              <div class="section-head"><h3>表情</h3></div>
+              <div class="expr-grid" id="exprGrid"></div>
+            </div>
+          </div>
+
+          <!-- ===== 对话 ===== -->
+          <div class="screen" data-screen="chat">
+            <div class="chat-head">
+              <canvas id="chatAvatar" width="80" height="80"></canvas>
+              <div>
+                <b>小栈</b>
+                <small id="chatState">在发呆</small>
+              </div>
+            </div>
+            <div class="chat-list" id="chatList"></div>
+            <div class="chat-bar">
+              <button class="mic-btn" id="micBtn" aria-label="让小栈听">
+                <svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              </button>
+              <input id="chatInput" type="text" placeholder="打字跟小栈说…" autocomplete="off">
+              <button class="send-btn" id="sendBtn" aria-label="发送">
+                <svg viewBox="0 0 24 24"><path d="M4 12l16-8-6 16-2.5-6.5z" fill="currentColor"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- ===== 编排 ===== -->
+          <div class="screen" data-screen="studio">
+            <div class="scroll">
+              <h2 class="title-xl">动作编排</h2>
+              <p class="sub">把表情、动作、台词排在时间轴上，做成小栈的专属小表演。</p>
+              <div class="chip-row" id="skillRow"></div>
+
+              <div class="timeline-card">
+                <div class="tl-head">
+                  <b id="tlName">打招呼</b>
+                  <span id="tlTime">0.0s / 8.0s</span>
+                </div>
+                <div class="timeline" id="timeline">
+                  <div class="tl-ruler" id="tlRuler"></div>
+                  <div class="tl-track" data-track="expr"><span class="tl-label">表情</span><div class="tl-lane"></div></div>
+                  <div class="tl-track" data-track="motion"><span class="tl-label">动作</span><div class="tl-lane"></div></div>
+                  <div class="tl-track" data-track="voice"><span class="tl-label">台词</span><div class="tl-lane"></div></div>
+                  <div class="tl-playhead" id="playhead"></div>
+                </div>
+                <div class="tl-actions">
+                  <button class="primary-btn" id="playBtn">
+                    <svg viewBox="0 0 24 24"><path d="M7 5l12 7-12 7z" fill="currentColor"/></svg><span>在小栈上播放</span>
+                  </button>
+                  <button class="ghost-btn" id="clearBtn">清空</button>
+                </div>
+              </div>
+
+              <div class="section-head"><h3>添加片段</h3><small class="hint">点时间轴上的片段可删除</small></div>
+              <div class="palette">
+                <div class="pal-row"><span>表情</span><div class="chip-row wrap" id="palExpr"></div></div>
+                <div class="pal-row"><span>动作</span><div class="chip-row wrap" id="palMotion"></div></div>
+                <div class="pal-row"><span>台词</span>
+                  <div class="say-input"><input id="palVoice" type="text" placeholder="输入一句台词" maxlength="20"><button id="palVoiceAdd">添加</button></div>
+                </div>
+              </div>
+              <button class="ghost-btn wide" id="saveSkill">保存为新技能</button>
+            </div>
+          </div>
+
+          <!-- ===== 我的 ===== -->
+          <div class="screen" data-screen="me">
+            <div class="scroll">
+              <h2 class="title-xl">我的小栈</h2>
+              <div class="device-card">
+                <canvas id="deviceAvatar" width="120" height="90"></canvas>
+                <div class="dc-info">
+                  <b>小栈</b>
+                  <small>StackChan · CoreS3</small>
+                  <div class="dc-tags"><span>固件 <em id="fwVer">v1.2.0</em></span><span>192.168.1.42</span></div>
+                </div>
+              </div>
+
+              <div class="section-head"><h3>相册</h3><button class="link-btn" id="shootBtn">拍一张</button></div>
+              <div class="album" id="album">
+                <div class="album-empty" id="albumEmpty">
+                  <div class="ae-art"><span></span></div>
+                  <p>还没有照片<br><small>点「拍一张」，小栈会倒数 3 秒</small></p>
+                </div>
+              </div>
+
+              <div class="section-head"><h3>摸摸日记</h3><small class="hint" id="touchCount">今天还没摸过它</small></div>
+              <ul class="diary" id="diary"></ul>
+
+              <div class="section-head"><h3>性格与声音</h3></div>
+              <div class="list-card">
+                <div class="slider-row">
+                  <div class="sr-top"><b>话多一点</b><span id="talkVal">50</span></div>
+                  <input type="range" min="0" max="100" value="50" id="talkRange">
+                  <div class="sr-ends"><small>安静</small><small>话痨</small></div>
+                </div>
+                <div class="slider-row">
+                  <div class="sr-top"><b>活泼程度</b><span id="liveVal">70</span></div>
+                  <input type="range" min="0" max="100" value="70" id="liveRange">
+                  <div class="sr-ends"><small>佛系</small><small>蹦蹦跳跳</small></div>
+                </div>
+                <div class="voice-row">
+                  <b>声音</b>
+                  <div class="chip-row wrap" id="voiceRow"></div>
+                  <button class="ghost-btn" id="voiceTry">试听</button>
+                </div>
+                <div class="toggle-row flat">
+                  <div><b>夜间安静</b><small>23:00 – 07:00 不主动说话</small></div>
+                  <label class="switch"><input type="checkbox" id="quietToggle" checked><span></span></label>
+                </div>
+              </div>
+
+              <div class="section-head"><h3>固件升级</h3></div>
+              <div class="list-card ota-card">
+                <div class="ota-top">
+                  <div><b id="otaTitle">当前已是最新？</b><small id="otaSub">上次检查：今天 09:12</small></div>
+                  <button class="primary-btn sm" id="otaBtn">检查更新</button>
+                </div>
+                <div class="ota-bar" id="otaBar"><i id="otaFill"></i></div>
+              </div>
+              <div class="bottom-space"></div>
+            </div>
+          </div>
+
+          <div class="toast" id="toast"></div>
+
+          <nav class="tabbar" id="tabbar">
+            <button class="on" data-tab="home"><svg viewBox="0 0 24 24"><path d="M4 11l8-6.5 8 6.5V20h-5.5v-5.5h-5V20H4z" fill="currentColor"/></svg><span>首页</span></button>
+            <button data-tab="control"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2.2"/><circle cx="12" cy="12" r="3.5" fill="currentColor"/></svg><span>遥控</span></button>
+            <button data-tab="chat"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z" fill="currentColor"/></svg><span>对话</span></button>
+            <button data-tab="studio"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="4" rx="2" fill="currentColor"/><rect x="3" y="11" width="11" height="4" rx="2" fill="currentColor"/><rect x="8" y="17" width="13" height="3" rx="1.5" fill="currentColor"/></svg><span>编排</span></button>
+            <button data-tab="me"><svg viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="4" fill="currentColor"/><path d="M4 20.5a8 8 0 0 1 16 0z" fill="currentColor"/></svg><span>我的</span></button>
+          </nav>
+          <div class="home-indicator"></div>
+        </div>
+      </div>
+    </div>
+    <p class="col-caption">iPhone 17 Pro · iOS App</p>
+  </section>
+
+  <!-- ============ Link ============ -->
+  <section class="link-col" aria-label="通信">
+    <div class="link-line" id="linkLine">
+      <span class="link-label">局域网 WebSocket</span>
+    </div>
+    <div class="proto-log">
+      <p class="pl-title">通信日志</p>
+      <ul id="protoLog"></ul>
+    </div>
+  </section>
+
+  <!-- ============ Robot ============ -->
+  <section class="robot-col" aria-label="机器人">
+    <div class="robot-scale" id="robotScale">
+      <div class="speech" id="speech"></div>
+      <div class="robot" id="robot">
+        <div class="head" id="head">
+          <div class="head-touch" id="headTouch" title="摸头"></div>
+          <div class="bezel">
+            <canvas id="faceCanvas" width="320" height="240"></canvas>
+          </div>
+          <span class="cam-dot"></span>
+        </div>
+        <div class="neck"></div>
+        <div class="body">
+          <div class="leds" id="leds"></div>
+          <span class="body-logo">STACK-CHAN</span>
+        </div>
+        <div class="feet"><i></i><i></i></div>
+      </div>
+      <div class="desk-shadow"></div>
+    </div>
+    <p class="col-caption">StackChan · 320×240 屏幕</p>
+  </section>
+
+</main>
+
+<script src="face.js"></script>
+<script src="robot.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

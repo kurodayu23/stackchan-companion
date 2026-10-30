@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>StackChan Companion · 方案墙（20 个原型）</title>
+<style>
+  /* 评审工具：中性灰阶，刻意不引入产品设计语言 */
+  :root{
+    --bg:#131315; --panel:#1c1c1f; --panel2:#242427; --line:#34343a;
+    --fg:#f2f2f4; --dim:#9a9aa2; --faint:#6a6a72;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+    font:14px/1.6 -apple-system,"Segoe UI",system-ui,"PingFang SC","Microsoft YaHei",sans-serif;
+    -webkit-font-smoothing:antialiased}
+  header{padding:28px 28px 18px;border-bottom:1px solid var(--line)}
+  h1{margin:0 0 6px;font-size:20px;font-weight:600;letter-spacing:.01em}
+  .sub{color:var(--dim);font-size:13px;max-width:760px}
+  .toolbar{display:flex;gap:8px;align-items:center;padding:14px 28px;border-bottom:1px solid var(--line);
+    flex-wrap:wrap;position:sticky;top:0;background:rgba(19,19,21,.92);backdrop-filter:blur(8px);z-index:5}
+  button{background:var(--panel2);color:var(--fg);border:1px solid var(--line);border-radius:7px;
+    padding:6px 13px;font-size:13px;cursor:pointer;font-family:inherit}
+  button:hover{border-color:#55555e}
+  button[aria-pressed="true"]{background:#33333a;border-color:#6a6a75}
+  .hint{color:var(--faint);font-size:12px;margin-left:auto}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(228px,1fr));
+    gap:18px;padding:24px 28px 60px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:11px;overflow:hidden;
+    display:flex;flex-direction:column;transition:border-color .12s}
+  .card:hover{border-color:#5a5a64}
+  .shot{display:block;width:100%;aspect-ratio:430/900;object-fit:cover;object-position:top center;
+    background:#000;border-bottom:1px solid var(--line)}
+  .meta{padding:10px 12px 12px;display:flex;flex-direction:column;gap:5px}
+  .row{display:flex;align-items:center;gap:7px}
+  .no{font-variant-numeric:tabular-nums;color:var(--faint);font-size:12px;min-width:20px}
+  .slug{font-size:12.5px;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .dot{width:11px;height:11px;border-radius:3px;border:1px solid #0006;flex:none}
+  .tag{font-size:10.5px;padding:1px 6px;border-radius:20px;border:1px solid var(--line);color:var(--dim)}
+  .tag.dark{border-color:#3a3a42;color:#b9b9c2}
+  .tag.light{border-color:#3d3d42}
+  .tag.final{border-color:#6b5a2a;color:#e3a857;background:#2a2317}
+  .note{color:var(--faint);font-size:11.5px}
+  .dead{margin-top:14px;padding:12px 14px;border:1px solid #5a3038;background:#241618;
+    border-radius:9px;color:#e8b9c0;font-size:12.5px;line-height:1.65}
+  .dead b{color:#ffd2d8}
+  .dead code{background:#3a2024;color:#ffc9d0}
+  .tabs{color:var(--faint);font-size:11px}
+  a.open{color:#8fb8ff;text-decoration:none;font-size:12px}
+  a.open:hover{text-decoration:underline}
+  footer{padding:0 28px 40px;color:var(--faint);font-size:12px;border-top:1px solid var(--line);padding-top:16px}
+  code{background:var(--panel2);padding:1px 5px;border-radius:4px;color:#c9c9d2}
+</style>
+</head>
+<body>
+<header>
+  <h1>StackChan Companion · 方案墙</h1>
+  <div class="sub">
+    20 个交互原型，一页看全。<b>点缩略图</b>在新标签打开可交互版本（能划、能切 Tab、能改表情）。
+    深色底 = <code>stage</code> 亮度 &lt; 128；色点是该方案自带的强调色。
+    <br>这是<b>评审工具</b>，视觉刻意用中性灰阶 —— 产品视觉方向尚未拍板，本页不预设立场。
+  </div>
+  <div class="dead">
+    ⛔ <b>这 20 个已作废</b>（2026-10-25）：用户判定它们<b>「太安卓味，不像 iOS App」</b>，
+    官方 Flutter App（用原生 UITabBar + CupertinoIcons）都比它们更有 iOS 感。
+    它们是 Web 味静态稿，缺导航栈、缺边缘右滑返回、缺真机外壳、Tab Bar 形态不对。<br>
+    ✅ <b>重做中</b>：<code>prototype/ios/ios-light.html</code> / <code>ios-dark.html</code>
+    —— 真 iPhone 外框 + 灵动岛 + 原生 Tab Bar + 导航栈 + 边缘右滑返回 + Sheet + Inset Grouped，
+    并由 <code>prototype/ios/check_ios.py</code> 机器判定「安卓味零命中」。
+    规范出处见 <code>docs/spec/08-iOS官方规范事实层.md</code>。
+  </div>
+</header>
+
+<div class="toolbar">
+  <button id="f-all"  aria-pressed="true">全部 20</button>
+  <button id="f-dark" aria-pressed="false">深底</button>
+  <button id="f-light" aria-pressed="false">浅底</button>
+  <button id="f-final" aria-pressed="false">仅 4 入围</button>
+  <span class="hint">来自 prototype/variants/*.html · 缩略图由 playwright 实截</span>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<footer>
+  实测的强调色合规性（WCAG 2.1，浅底 4.5:1 / 深底 4.5:1）：
+  深底合法 —— <code>#E3A857</code>（8.99:1）、<code>#8FD3F4</code>（10.36~11.51:1）、<code>#E8638C</code>（5.34~5.93:1）、<code>#FF6D60</code>（仅深底）。
+  浅底合法 —— <code>#B33A55</code>（5.75:1）、<code>#9E3B26</code>（6.76:1）。
+  ⛔ 旧 PWA 的 <code>#ff6d60</code> 在浅底 <b>0/5 达标</b>（最高 2.76:1）。
+</footer>
+
+<script>
+const DATA = [
+ {
+  "slug": "01-paper-terracotta",
+  "no": "01",
+  "file": "01-paper-terracotta.html",
+  "tone": "light",
+  "accent": "#AF4C37",
+  "bg": "#000000",
+  "lum": 192,
+  "tabs": [
+   "陪伴",
+   "小栈"
+  ],
+  "final": true,
+  "note": "浅底 · 陶土手作"
+ },
+ {
+  "slug": "02-graphite-mono",
+  "no": "02",
+  "file": "02-graphite-mono.html",
+  "tone": "dark",
+  "accent": "#D9A15B",
+  "bg": "#000000",
+  "lum": 53,
+  "tabs": [
+   "陪伴",
+   "小栈"
+  ],
+  "final": false,
+  "note": ""
+ },
+ {
+  "slug": "03-pure-white-blank",
+  "no": "03",
+  "file": "03-pure-white-blank.html",
+  "tone": "light",
+  "accent": "#B74332",
+  "bg": "#FFFFFF",
+  "lum": 237,
+  "tabs": [
+   "陪伴",
+   "小栈"
+  ],
+  "final": true,
+  "note": "纯白 · 极简留白"
+ },
+ {
+  "slug": "04-stage-spotlight",
+  "no": "04",
+  "file": "04-stage-spotlight.html",
+  "tone": "dark",
+  "accent": "#F5A524",
+  "bg": "#0B0B0C",
+  "lum": 27,
+  "tabs": [
+   "陪伴",
+   "小栈"
+  ],
+  "final": false,
+  "note": ""
+ },
+ {
+  "slug": "05-pet-cosy",
+  "no": "05",
+  "file": "05-pet-cosy.html",
+  "tone": "light",
+  "accent": "#78504B",
+  "bg": "#FBF7F6",
+  "lum": 230,
+  "tabs": [
+   "陪伴",
+   "小栈"
+  ],
+  "final": false,
+  "note": ""
+ },
+ {
+  "slug": "06-ink-editorial",
+  "no": "06",
+  "file": "06-ink-editorial.html",
+  "tone": "light",
+  "accent": "",
+  "bg": "#FBFBFA",
+  "lum": 234,
+  "tabs": [
+   "陪伴",
+   "小栈"
+  ],
+  "final": false,
+  "note": ""
+ },
+ {
+  "slug": "07-blueprint-tech",
+  "no": "07",
+  "file": "07-blueprint-tech.html",
+  "tone": "dark",
+  "accent": "#4CC2FF",
+  "bg": "#0C1218",
+  "lum": 32,
+  "tabs": [
+   "陪伴",
+   "小栈"
+  ],
+  "final": false,
+  "note": ""
+ },
+ {
+  "slug": "08-warm-terminal",
+  "no": "08",
+  "file": "08-warm-terminal.html",
+  "tone": "dark",
+  "accent": "#FFB454",
+  "bg": "#16110C",
+  "lum": 33,
+  "tabs": [
+   "陪伴",
+   "小栈"
+  ],
+  "final": false,
+  "note": ""
+ },
+ {
+  "slug": "09-swiss-grid",
+  "no": "09",
+  "file": "09-swiss-grid.html",
+  "tone": "light",
+  "accent": "#C92F26",
+  "bg": "#FFFFFF",
+  "lum": 235,
+  "tabs": [
+   "陪伴",
+   "小栈"
+  ],
+  "final": false,
+  "note": ""
+ },
+ {
+  "slug": "10-dual-voice",
+  "no": "10",
+  "file": "10-dual-voice.html",
+  "tone": "light",
+  "accent": "#2A64D5",
+  "bg": "#F7F8FA",
+  "lum": 230,
+  "tabs": [
+   "陪伴",
+   "小栈"
+  ],
+  "final": false,
+  "note": ""
+ },
+ {
+  "slug": "11-muted-sage",
+  "no": "11",
+  "file": "11-muted-sage.html",
+  "tone": "light",
+  "accent": "#3A7457",
+  "bg": "#F4F6F4",
+  "lum": 229,
+  "tabs": [
+   "陪伴",
+   "小栈"
+  ],
+  "final": false,
+  "note": ""
+ },
+ {
+  "slug": "12-noir-contrast",
+  "no": "12",
+  "file": "12-noir-contrast.html",
+  "tone": "light",
+  "accent": "",
+  "bg": "#FFFFFF",
+  "lum": 236,
+  "tabs": [
+   "陪伴",
+   "小栈"
+  ],
+  "final": false,
+  "note": ""
+ },
+ {
+  "slug": "13-dim-surface",
+  "no": "13",
+  "file": "13-dim-surface.html",
+  "tone": "dark",
+  "accent": "#7C8CFF",
+  "bg": "#101014",
+  "lum": 32,
+  "tabs": [
+   "陪伴",
+   "小栈"
+  ],
+  "final": false,
+  "note": ""
+ },
+ {
+  "slug": "14-coral-pop",
+  "no": "14",
+  "file": "14-coral-pop.html",
+  "tone": "light",
+  "accent": "#B45A46",
+  "bg": "#FFFBFA",
+  "lum": 234,
+  "tabs": [
+   "陪伴",
+   "小栈"
+  ],
+  "final": false,
+  "note": ""
+ },
+ {
+  "slug": "15-dot-matrix",
+  "no": "15",
+  "file": "15-dot-matrix.html",
+  "tone": "dark",
+  "accent": "#4CFF9E",
+  "bg": "#0A0F0C",
+  "lum": 29,
+  "tabs": [
+   "陪伴",
+   "小栈"
+  ],
+  "final": false,
+  "note": ""
+ },
+ {
+  "slug": "16-paper-editorial-warm",
+  "no": "16",
+  "file": "16-paper-editorial-warm.html",
+  "tone": "light",
+  "accent": "#9C4A32",
+  "bg": "#F7F4EF",
+  "lum": 228,
+  "tabs": [
+   "陪伴",
+   "小栈"
+  ],
+  "final": false,
+  "note": ""
+ },
+ {
+  "slug": "17-warm-paper-serif",
+  "no": "17",
+  "file": "17-warm-paper-serif.html",
+  "tone": "light",
+  "accent": "#9E3B26",
+  "bg": "#EAE6DE",
+  "lum": 216,
+  "tabs": [
+   "陪伴",
+   "小栈"
+  ],
+  "final": true,
+  "note": "浅底 · 纸感衬线"
+ },
+ {
+  "slug": "18-tuck-dark-calm",
+  "no": "18",
+  "file": "18-tuck-dark-calm.html",
+  "tone": "dark",
+  "accent": "#E3A857",
+  "bg": "#111113",
+  "lum": 34,
+  "tabs": [
+   "陪伴",
+   "小栈"
+  ],
+  "final": true,
+  "note": "深底 · 低饱和暖金强调色"
+ },
+ {
+  "slug": "19-swiss-editorial",
+  "no": "19",
+  "file": "19-swiss-editorial.html",
+  "tone": "light",
+  "accent": "#D80600",
+  "bg": "#FFFFFF",
+  "lum": 223,
+  "tabs": [
+   "陪伴",
+   "小栈"
+  ],
+  "final": false,
+  "note": ""
+ },
+ {
+  "slug": "20-mint-terminal",
+  "no": "20",
+  "file": "20-mint-terminal.html",
+  "tone": "dark",
+  "accent": "#5CFFA8",
+  "bg": "#071410",
+  "lum": 21,
+  "tabs": [
+   "陪伴",
+   "小栈"
+  ],
+  "final": false,
+  "note": ""
+ }
+];
+
+function card(it){
+  const el = document.createElement('div');
+  el.className = 'card';
+  el.dataset.tone = it.tone;
+  el.dataset.final = it.final ? '1' : '0';
+  const dots = [];
+  if (it.bg) dots.push('<span class="dot" style="background:'+it.bg+'" title="底色 '+it.bg+'"></span>');
+  if (it.accent) dots.push('<span class="dot" style="background:'+it.accent+'" title="强调色 '+it.accent+'"></span>');
+  el.innerHTML =
+    '<a class="shot" href="variants/'+it.file+'" target="_blank" title="打开 '+it.slug+'">'+
+      '<img class="shot" loading="lazy" src="thumbs/'+it.slug+'.png" alt="'+it.slug+' 预览">'+
+    '</a>'+
+    '<div class="meta">'+
+      '<div class="row"><span class="no">'+it.no+'</span>'+
+        '<span class="slug">'+it.slug.replace(/^[0-9]+-/,'')+'</span>'+
+        dots.join('')+
+      '</div>'+
+      '<div class="row">'+
+        '<span class="tag '+it.tone+'">'+(it.tone==='dark'?'深底':'浅底')+'</span>'+
+        (it.final?'<span class="tag final">入围</span>':'')+
+        (it.note?'<span class="note">'+it.note+'</span>':'')+
+      '</div>'+
+      (it.tabs.length?'<div class="tabs">Tab：'+it.tabs.join(' / ')+'</div>':'')+
+      '<div><a class="open" href="variants/'+it.file+'" target="_blank">打开可交互版本 →</a></div>'+
+    '</div>';
+  return el;
+}
+
+const grid = document.getElementById('grid');
+DATA.forEach(it => grid.appendChild(card(it)));
+
+const F = { 'f-all':()=>true, 'f-dark':(it)=>it.tone==='dark',
+            'f-light':(it)=>it.tone==='light', 'f-final':(it)=>it.final };
+Object.keys(F).forEach(id=>{
+  document.getElementById(id).addEventListener('click', ()=>{
+    Object.keys(F).forEach(x=>document.getElementById(x).setAttribute('aria-pressed', String(x===id)));
+    const f = F[id];
+    let n = 0;
+    DATA.forEach(it=>{
+      const el = grid.children[n];
+      const show = f(it);
+      el.style.display = show ? '' : 'none';
+      if (show) n++;
+    });
+  });
+});
+</script>
+</body>
+</html>

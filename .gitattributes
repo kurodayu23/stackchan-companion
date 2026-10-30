@@ -1,0 +1,31 @@
+# ---------------------------------------------------------------------------
+# 行尾与二进制声明
+#
+# 为什么需要：仓内文档一律 LF（`tools/check_docs.py` 把 CRLF 判为 FAIL），
+# 但 Windows 上的 Git 默认 `core.autocrlf=true` ⇒ 别人克隆后一提交，
+# 整仓文件会被改写成 CRLF ⇒ 本地门禁与 CI 同时变红。
+# ⇒ 在仓内钉死：`text=auto` 让 Git 自行探测，检出时统一 LF。
+# ---------------------------------------------------------------------------
+* text=auto eol=lf
+
+# --- 二进制：一律不做行尾/文本转换 ---
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.webp  binary
+*.ico   binary
+*.pdf   binary
+*.zip   binary
+*.gz    binary
+*.tar   binary
+*.mp3   binary
+*.wav   binary
+*.mp4   binary
+*.mov   binary
+*.glb   binary
+*.bin   binary
+*.ttf   binary
+*.otf   binary
+*.woff  binary
+*.woff2 binary

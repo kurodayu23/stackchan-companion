@@ -1,0 +1,150 @@
+# ============================================================================
+# XcodeGen 工程描述 —— **权威来源**
+#
+# 生成命令（Mac 上）：
+#     brew install xcodegen
+#     cd ios && xcodegen generate
+#
+# 为什么用 XcodeGen 而不是手写 pbxproj：
+#   pbxproj 是 24 位 UUID 交织的图结构，手写极易出错且无法在本机（Windows / 无 Xcode）
+#   验证；XcodeGen 用这一份 YAML 描述工程，UUID 由它稳定生成，Mac 上一行命令即可复现。
+#   `ios/StackChanCompanion.xcodeproj/project.pbxproj` 是**尽力给出**的手写副本，
+#   **未经 Mac 验证**，权威来源始终是本文件。
+#
+# ⛔ 本文件只描述**工程结构**，不描述任何视觉：
+#    颜色 / 字号 / 圆角 / 间距 / 字体 / 动效曲线 全部待用户拍板
+#    （占位标记见 DesignSystem 各文件，grep `TODO_PENDING_DESIGN_DECISION`）。
+#
+# 最低部署版本：**iOS 17.0**
+#   理由（仓库文档）：
+#     - docs/spec/05-技术选型与功能实施方案.md §技术选型表：「iOS App | 原生 SwiftUI，从零写 |
+#       **iOS 17+**（用 iOS 26 增强特性做渐进增强）」
+#     - DESIGN.md §7.2：「我们的最低部署 iOS 17（`00` §5.5），故以上 API 全部走
+#       `#available(iOS 26.0, *)` 渐进增强」
+#     - 同一张表：「iOS 状态管理 | `@Observable`（iOS 17+）」「触感 | `.sensoryFeedback`（iOS 17+）」
+#   ⇒ iOS 17 同时满足：@Observable（状态管理）、.sensoryFeedback（触感）、
+#     ActivityKit Live Activity（iOS 16.1+）、App Intents（iOS 16+），
+#     且 Liquid Glass（iOS 26）用 #available 渐进增强，不必抬高门槛。
+# ============================================================================
+name: StackChanCompanion
+
+options:
+  bundleIdPrefix: com.stackchan.companion
+  createIntermediateGroups: true
+  deploymentTarget:
+    iOS: "17.0"
+  groupSortPosition: top
+  minimumXcodeGenVersion: "2.35.0"
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    CODE_SIGN_STYLE: Automatic
+    ENABLE_USER_SCRIPT_SANDBOXING: "YES"
+    IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+    TARGETED_DEVICE_FAMILY: "1,2"
+
+# ---------------------------------------------------------------------------
+# 本地 Swift Package：协议层（可独立跑单测，不需要模拟器）
+# ---------------------------------------------------------------------------
+packages:
+  CoreProtocol:
+    path: StackChanCompanion/CoreProtocol
+
+targets:
+
+  # -------------------------------------------------------------------------
+  # 共享动态框架：Live Activity 的 ActivityAttributes
+  #
+  # 为什么必须是**动态框架**而不是各编译一份：
+  #   ActivityKit 靠 ActivityAttributes 类型的 mangled name 匹配活动与 widget，
+  #   静态链接会让 App 与 Extension 各得到一份不同 mangled name 的副本 ⇒ 匹配不上。
+  #   （Apple 官方 Emoji Rangers 示例同样用 shared framework 承载 ActivityAttributes。）
+  # -------------------------------------------------------------------------
+  StackChanShared:
+    type: framework
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: StackChanCompanion/Features/LiveActivity/StackChanAttributes.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.stackchan.companion.shared
+        PRODUCT_NAME: StackChanShared
+        DEFINES_MODULE: "YES"
+        SKIP_INSTALL: "YES"
+        GENERATE_INFOPLIST_FILE: "YES"
+
+  # -------------------------------------------------------------------------
+  # Live Activity 的 Widget Extension
+  # -------------------------------------------------------------------------
+  StackChanCompanionWidgetExtension:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: StackChanCompanion/Features/LiveActivity/StackChanLiveActivityWidget.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.stackchan.companion.widget
+        PRODUCT_NAME: StackChanCompanionWidgetExtension
+        INFOPLIST_FILE: StackChanCompanion/Features/LiveActivity/Info.plist
+        GENERATE_INFOPLIST_FILE: "NO"
+        SKIP_INSTALL: "YES"
+    dependencies:
+      # 链接但不单独 embed：由 App embed 一份，Extension 通过 rpath 找到同一份二进制
+      - target: StackChanShared
+
+  # -------------------------------------------------------------------------
+  # 主 App
+  # -------------------------------------------------------------------------
+  StackChanCompanion:
+    type: application
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: StackChanCompanion
+        excludes:
+          # 协议层是独立 Package，不进 App target（否则同一份类型会被编译两遍）
+          - "CoreProtocol/**"
+          # Live Activity 的两个文件分别归属 widget extension / 共享框架
+          - "Features/LiveActivity/StackChanAttributes.swift"
+          - "Features/LiveActivity/StackChanLiveActivityWidget.swift"
+          # plist 不作为源码
+          - "Features/LiveActivity/Info.plist"
+          - "Resources/Info.plist"
+    resources:
+      - path: StackChanCompanion/Resources/Assets.xcassets
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.stackchan.companion
+        PRODUCT_NAME: StackChanCompanion
+        INFOPLIST_FILE: StackChanCompanion/Resources/Info.plist
+        GENERATE_INFOPLIST_FILE: "NO"
+        # ⛔ App Icon 视觉待拍板（docs/research/19 F39–F43；DESIGN.md §6）
+        #    源图就位后取消下面这行注释，并把
+        #    Resources/Assets.xcassets/AppIcon.appiconset/Contents.json 的 images 填上。
+        # ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+    dependencies:
+      - package: CoreProtocol
+        product: CoreProtocol
+      - target: StackChanShared
+        embed: true
+      - target: StackChanCompanionWidgetExtension
+        embed: true
+
+schemes:
+  StackChanCompanion:
+    build:
+      targets:
+        StackChanCompanion: all
+        StackChanCompanionWidgetExtension: all
+        StackChanShared: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+    archive:
+      config: Release

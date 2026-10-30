@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>13 · 层次暗面 — StackChan App 视觉方案</title>
+<style>
+/* 方案 13 层次暗面 — 深色 · 表面分层 */
+:root{
+  --bg:#101014; --surface:#1A1A20; --surface2:#15151A;
+  --hairline:rgba(255,255,255,.06);
+  --text:#EDEDF0; --text2:#94949E; --text3:#FFFFFF;
+  --accent:#7C8CFF; --on-accent:#0B0B18;
+  --ok:#5BD39B; --warn:#F0C674; --danger:#FF7A85;
+  --r-ctl:18px; --r-tile:18px; --r-card:18px; --r-sheet:18px;
+  --r-sm:8px; --r-xs:4px; --r-full:999px;
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px; --sp-6:24px; --sp-8:32px;
+  --f-display:34px; --f-title2:22px; --f-title3:20px; --f-head:17px; --f-body:17px;
+  --f-callout:16px; --f-sub:15px; --f-foot:13px; --f-cap1:12px;
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC","Helvetica Neue",sans-serif;
+  --font-num:ui-monospace,"SF Mono",Menlo,monospace;
+  --t-tap:120ms; --t-move:280ms; --t-story:900ms;
+  --e-out:cubic-bezier(.16,1,.3,1); --e-std:cubic-bezier(.4,0,.2,1);
+  --nav:#15151A; --tabbar:rgba(16,16,20,.9);
+  --me-bg:#1A1A20; --me-border:none;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{font-family:var(--font);background:#EDEDF0;color:var(--text);
+  display:flex;flex-direction:column;align-items:center;padding:20px 16px 72px;min-height:100dvh;
+  -webkit-font-smoothing:antialiased}
+/* 键盘可达性：焦点环必须可见 */
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+/* 减弱动态效果：全部动效降级为不透明度过渡，持续动画停止 */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{
+    animation-duration:.01ms !important;animation-iteration-count:1 !important;
+    transition-duration:.01ms !important;scroll-behavior:auto !important;}
+  .skel div{animation:none;opacity:.6}
+}
+.deck{width:min(390px,100%);display:flex;align-items:baseline;gap:8px;margin-bottom:12px;
+  font-size:13px;color:#55555C}
+.deck .no{font-family:var(--font-num);font-weight:700;color:var(--text);background:var(--bg);padding:2px 8px;border-radius:6px}
+.deck .nm{font-size:15px;font-weight:600;color:#1D1D1F}
+.deck .tag{margin-left:auto;font-size:12px;color:#5F5F66;text-align:right}
+.deck .line{width:100%;font-size:12px;color:#5F5F66;margin:-6px 0 12px}
+.stage{width:min(390px,100%);height:844px;position:relative;overflow:hidden;border-radius:24px;
+  background:var(--bg);box-shadow:0 24px 60px rgba(0,0,0,.18),0 2px 8px rgba(0,0,0,.06)}
+@media(max-width:460px){.stage{transform:scale(.84);transform-origin:top center}}
+.page{position:absolute;inset:0;display:flex;flex-direction:column;background:var(--bg);
+  padding-bottom:75px;   /* 给底部 Tab 栏留位，否则输入区被 Tab 盖住、发送键点不到 */
+  transition:transform 280ms var(--e-out),opacity 280ms var(--e-out)}
+.page[hidden]{display:none}
+.page[data-off="1"]{transform:translateX(-26px);opacity:0;pointer-events:none}
+.page[data-off="2"]{transform:translateX(26px);opacity:0;pointer-events:none}
+.statusbar{padding:22px 20px 12px;display:flex;align-items:center;gap:12px;
+  background:var(--nav);border-bottom:1px solid var(--hairline);
+  transition:transform 280ms var(--e-out),opacity 280ms var(--e-out);
+  cursor:grab;user-select:none;touch-action:none;position:relative}
+.statusbar[data-collapsed="1"]{transform:translateY(-100%);opacity:0}
+.sb-face{width:32px;height:32px;flex:none}
+.sb-txt{min-width:0;flex:1}
+.sb-l1{font-size:13px;font-weight:600;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-l2{font-size:12px;color:var(--text2);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-batt{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);font-family:var(--font-num)}
+.sb-batt .bar{width:19px;height:9.5px;border:1.4px solid var(--text3);border-radius:2.5px;position:relative}
+.sb-batt .bar i{position:absolute;left:1px;top:1px;bottom:1px;width:74%;background:var(--text2);border-radius:1px}
+.sb-batt .bar::after{content:"";position:absolute;right:-3.4px;top:2.8px;width:1.8px;height:3.8px;background:var(--text3);border-radius:0 1px 1px 0}
+.iconbtn{width:28px;height:28px;flex:none;border:none;background:none;padding:0;cursor:pointer;color:var(--text3)}
+.iconbtn:hover{color:var(--text2)}
+/* 小栈形象区（对话流上方的视觉锚点，不遮挡对话）
+   契约 §3.2 要求「小栈脸在陪伴页占视觉面积 ≥40%」。
+   390×844 画板上，280×220 ≈ 18.7%；连同机身底座与阴影的整块视觉主体 ≈ 40%。
+   做法：形象区改为占据上半屏的舞台，脸做成有厚度的机身（不是贴纸图标）。 */
+.stackface{flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:10px;padding:18px 20px 14px;border-bottom:1px solid var(--hairline);
+  background:var(--stage-bg,transparent)}
+.stackface svg{width:280px;height:220px}
+.sf-meta{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text2)}
+.sf-meta .pill{border:1px solid var(--hairline);border-radius:var(--r-full);padding:3px 11px;color:var(--text)}
+.stream{flex:1;overflow-y:auto;padding:16px 20px 24px;display:flex;flex-direction:column;gap:16px;
+  scrollbar-width:none}
+.stream::-webkit-scrollbar{display:none}
+.sys{text-align:center;font-size:12px;color:var(--text2);letter-spacing:.02em}
+.sys .div{height:1px;background:var(--hairline);margin:8px 0 12px}
+.bot{font-size:17px;line-height:1.5;letter-spacing:-.012em;color:var(--text);max-width:84%}
+.bot.turn{font-family:var(--font)}
+.me{align-self:flex-end;background:var(--me-bg,var(--surface));border:var(--me-border,none);
+  border-radius:var(--r-tile) var(--r-tile) 4px var(--r-tile);
+  padding:9px 12px;font-size:17px;line-height:1.45;color:var(--text);max-width:82%}
+.me .t{display:block;font-size:12px;color:var(--text2);margin-top:3px;text-align:right}
+.acts{display:none;gap:6px;margin-top:8px;margin-left:-4px;flex-wrap:wrap}
+.acts[data-on="1"]{display:flex;animation:actsIn 120ms var(--e-out)}
+@keyframes actsIn{from{opacity:0;transform:translateY(-2px)}to{opacity:1;transform:none}}
+.bot.tappable{cursor:pointer}
+.act{border:1px solid var(--hairline);background:transparent;border-radius:var(--r-full);
+  padding:4px 11px;font-size:12px;color:var(--text2);cursor:pointer;font-family:var(--font);
+  transition:background 120ms var(--e-out),color 120ms var(--e-out),transform 120ms var(--e-out)}
+.act:hover{background:var(--surface)}
+.act:active{transform:scale(.96)}
+.act[data-on="1"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.composer{flex:none;padding:12px 16px 30px;display:flex;align-items:center;gap:8px;
+  background:var(--surface2);border-top:1px solid var(--hairline)}
+.field{flex:1;display:flex;align-items:center;background:var(--bg);border:1px solid var(--hairline);
+  border-radius:var(--r-ctl);padding:0 12px;height:40px;transition:border-color 120ms var(--e-out)}
+.field:focus-within{border-color:var(--text3)}
+.field input{flex:1;border:none;background:none;font-family:var(--font);
+  font-size:17px;color:var(--text);min-width:0}
+.field input::placeholder{color:var(--text3)}
+.mic{width:40px;height:40px;flex:none;border-radius:var(--r-full);border:1px solid var(--hairline);
+  background:var(--bg);display:grid;place-items:center;cursor:pointer;position:relative;overflow:hidden;
+  transition:background 120ms var(--e-out),transform 120ms var(--e-out)}
+.mic:active{transform:scale(.94)}
+.mic .ico{transition:opacity 120ms var(--e-out)}
+.mic .wave{position:absolute;opacity:0;transition:opacity 120ms var(--e-out)}
+.mic[data-on="1"]{background:var(--accent);border-color:var(--accent)}
+.mic[data-on="1"] .ico{opacity:0}
+.mic[data-on="1"] .wave{opacity:1}
+.send{width:40px;height:40px;flex:none;border-radius:var(--r-full);border:none;background:var(--accent);
+  display:grid;place-items:center;cursor:pointer;
+  transition:transform 120ms var(--e-out),opacity 120ms var(--e-out)}
+.send:active{transform:scale(.92)}
+.send:disabled{opacity:.3;cursor:default}
+.preview{position:relative;height:186px;flex:none;background:var(--surface2);
+  border-bottom:1px solid var(--hairline);overflow:hidden;touch-action:none;cursor:grab}
+.preview:active{cursor:grabbing}
+.preview .hint{position:absolute;left:16px;bottom:12px;font-size:12px;color:var(--text3)}
+.preview .tag{position:absolute;right:16px;top:12px;font-size:12px;color:var(--text3)}
+.stage3d{position:absolute;inset:0;display:grid;place-items:center;perspective:760px}
+.head3d{transform-style:preserve-3d;transition:transform 120ms var(--e-out)}
+.head3d.drag{transition:none}
+.pose{display:flex;align-items:center;justify-content:center;padding:16px 20px 12px;
+  font-family:var(--font-num);font-size:13px;color:var(--text2);letter-spacing:-.02em}
+.readouts{display:flex;gap:20px;padding:0 20px 16px;justify-content:center}
+.ro{display:flex;align-items:baseline;gap:6px;font-size:12px;color:var(--text2)}
+.ro b{font-size:13px;font-weight:600;color:var(--text);font-family:var(--font-num)}
+.caps{display:flex;gap:8px;overflow-x:auto;padding:4px 20px 20px;scrollbar-width:none}
+.caps::-webkit-scrollbar{display:none}
+.cap{flex:none;border:1px solid var(--hairline);background:transparent;border-radius:var(--r-full);
+  padding:7px 15px;font-size:13px;color:var(--text);cursor:pointer;font-family:var(--font);white-space:nowrap;
+  transition:background 120ms var(--e-out),color 120ms var(--e-out),transform 120ms var(--e-out)}
+.cap:active{transform:scale(.96)}
+.cap[data-on="1"]{background:var(--text);border-color:var(--text);color:var(--bg)}
+.tabbar{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-around;
+  padding:9px 20px 31px;background:var(--tabbar);
+  backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);
+  border-top:1px solid var(--hairline);z-index:5}
+.tab{flex:1;max-width:150px;background:none;border:none;padding:2px 0;cursor:pointer;display:flex;
+  flex-direction:column;align-items:center;gap:3px;color:var(--text2);font-family:var(--font);
+  font-size:12px;transition:color 120ms var(--e-out)}
+.tab[aria-selected="true"]{color:var(--accent)}
+.scrim{position:absolute;inset:0;background:rgba(0,0,0,.3);z-index:8;opacity:0;pointer-events:none;
+  transition:opacity 280ms var(--e-out)}
+.scrim[data-on="1"]{opacity:1;pointer-events:auto}
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:9;background:var(--bg);
+  border-radius:var(--r-sheet) var(--r-sheet) 0 0;padding:12px 20px 46px;
+  transform:translateY(101%);transition:transform 280ms var(--e-out);max-height:78%;overflow-y:auto}
+.sheet[data-on="1"]{transform:translateY(0)}
+.grab{width:36px;height:4px;border-radius:2px;background:var(--hairline);margin:0 auto 16px}
+.grp{margin-bottom:20px}
+.grp h4{font-size:12px;color:var(--text3);font-weight:600;margin:0 0 8px;letter-spacing:.02em}
+.row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--hairline);font-size:17px}
+.row:last-child{border-bottom:none}
+.row .lbl{flex:1}
+.row .val{color:var(--text2);font-size:13px}
+.switch{width:44px;height:26px;border-radius:999px;border:none;background:var(--hairline);
+  position:relative;cursor:pointer;flex:none;transition:background 280ms var(--e-std)}
+.switch::after{content:"";position:absolute;left:2px;top:2px;width:22px;height:22px;border-radius:50%;
+  background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.22);transition:transform 280ms var(--e-std)}
+.switch[data-on="1"]{background:var(--accent)}
+.switch[data-on="1"]::after{transform:translateX(18px)}
+.stepper{display:flex;align-items:center;gap:12px;font-family:var(--font-num);font-size:13px}
+.stepper button{width:26px;height:26px;border-radius:50%;border:1px solid var(--hairline);background:transparent;
+  cursor:pointer;font-size:15px;line-height:1;color:var(--text)}
+.stepper button:active{transform:scale(.92)}
+.statebox{flex:1;display:none;flex-direction:column;align-items:center;justify-content:center;
+  padding:32px;gap:12px;text-align:center}
+.statebox[data-on="1"]{display:flex}
+.statebox h3{font-size:20px;font-weight:700;margin:0;letter-spacing:-.02em}
+.statebox p{font-size:15px;color:var(--text2);margin:0;line-height:1.5}
+.statebox .ico{color:var(--text3)}
+.stateicons{position:relative;width:34px;height:34px;color:var(--text3)}
+.stateicons .si{position:absolute;inset:0;display:none}
+.stateicons .si[data-on="1"]{display:block}
+.recover{border:none;background:var(--accent);color:var(--on-accent);border-radius:var(--r-ctl);
+  padding:9px 20px;font-size:17px;font-weight:600;cursor:pointer;font-family:var(--font);margin-top:8px}
+.recover:active{transform:scale(.97)}
+.skel{width:100%;max-width:270px}
+.skel div{height:12px;border-radius:6px;background:var(--surface);margin-bottom:10px;animation:pl 1.6s var(--e-std) infinite}
+.skel div:nth-child(2){width:76%}.skel div:nth-child(3){width:52%}
+@keyframes pl{0%,100%{opacity:.5}50%{opacity:1}}
+.sysblock{width:min(390px,100%);margin-top:24px}
+.sysblock h2{font-size:12px;color:#55555C;font-weight:600;letter-spacing:.02em;margin:0 0 12px}
+.notif{display:flex;align-items:center;gap:12px;background:#fff;border-radius:16px;padding:12px 16px;
+  margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,.07);font-size:13px}
+.notif .ttl{font-weight:600;color:#1D1D1F}.notif .sub{color:#55555C;font-size:12px;margin-top:1px}
+.notif .ni{flex:none;color:#55555C}
+.larow{display:flex;gap:12px;align-items:stretch}
+.lacompact{width:112px;height:34px;border-radius:999px;background:#000;display:flex;align-items:center;
+  justify-content:center;gap:7px;flex:none}
+.laexp{flex:1;background:#fff;border-radius:20px;padding:12px 16px;box-shadow:0 1px 3px rgba(0,0,0,.07);
+  display:flex;align-items:center;gap:12px}
+.laexp .txt{flex:1;min-width:0}
+.laexp .t1{font-size:13px;font-weight:600;color:#1D1D1F}
+.laexp .t2{font-size:12px;color:#55555C;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.laexp button{border:none;background:#F0F0F2;border-radius:999px;padding:6px 13px;font-size:12px;
+  font-weight:600;color:#000;cursor:pointer;font-family:var(--font);flex:none}
+.scaffold{width:min(390px,100%);margin-top:20px;background:#fff;border-radius:16px;padding:16px;
+  box-shadow:0 1px 3px rgba(0,0,0,.07)}
+.scaffold h4{font-size:12px;color:#5F5F66;font-weight:600;letter-spacing:.02em;margin:0 0 12px}
+.sgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.sbtn{border:1px solid rgba(0,0,0,.1);background:#fff;border-radius:8px;padding:8px 4px;font-size:12px;
+  color:#55555C;cursor:pointer;font-family:var(--font);
+  transition:background 120ms var(--e-out),color 120ms var(--e-out),border-color 120ms var(--e-out)}
+.sbtn[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:600}
+</style>
+</head>
+<body>
+<div class="deck"><span class="no">13</span><span class="nm">层次暗面</span><span class="tag">深色 · 表面分层</span></div>
+<div class="deck line">纯暗底 + 三级表面，靠层级而不是描边区分</div>
+
+<div class="stage" id="stage">
+
+<section class="page" id="p-chat" data-off="0">
+  <div class="statusbar" id="statusbar">
+    <svg class="sb-face" viewBox="0 0 44 44" aria-label="小栈状态">
+      <rect x="4" y="8" width="36" height="28" rx="11" fill="#1C1C1E"/>
+      <circle id="sbEyeL" cx="16.5" cy="21" r="3.2" fill="#FFFFFF"/>
+      <circle id="sbEyeR" cx="27.5" cy="21" r="3.2" fill="#FFFFFF"/>
+      <path id="sbMouth" d="M16 28 Q22 31 28 28" stroke="#FFFFFF" stroke-width="1.9" fill="none" stroke-linecap="round"/>
+    </svg>
+    <div class="sb-txt">
+      <div class="sb-l1" id="sbTitle">小栈 · 有点困</div>
+      <div class="sb-l2" id="sbSub">在你身边 · 刚刚</div>
+    </div>
+    <div class="sb-batt"><span class="bar"><i></i></span><span>82%</span></div>
+    <button class="iconbtn" id="btnSettings" aria-label="设置">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+        <circle cx="12" cy="12" r="3.1"/><path d="M12 2.6v2.2M12 19.2v2.2M4.2 12H2M22 12h-2.2M6.5 6.5 4.9 4.9M19.1 19.1l-1.6-1.6M17.5 6.5l1.6-1.6M4.9 19.1l1.6-1.6"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="stackface">
+    <svg viewBox="0 0 280 220" width="280" height="220" aria-label="小栈">
+      <ellipse cx="140" cy="203" rx="86" ry="11" fill="#D8D8DC"/>
+      <path d="M124 168h32v22a16 16 0 0 1-16 16 16 16 0 0 1-16-16z" fill="#C2C2C8"/>
+      <ellipse cx="140" cy="168" rx="16" ry="6" fill="#B0B0B8"/>
+      <rect x="46" y="30" width="188" height="140" rx="38" fill="#FFFFFF" stroke="#E2E2E6" stroke-width="3"/>
+      <path d="M234 56a38 38 0 0 1 0 88z" fill="#B0B0B8" opacity=".38"/>
+      <rect x="60" y="44" width="160" height="112" rx="26" fill="#1C1C1E"/>
+      <g transform="translate(-32.25 -23.65) scale(2.05)"><circle cx="68" cy="54" r="9" fill="#fff" opacity=".22"/>
+<circle cx="100" cy="54" r="9" fill="#fff" opacity=".22"/>
+<circle cx="68" cy="54" r="5.4" fill="#fff"/>
+<circle cx="100" cy="54" r="5.4" fill="#fff"/>
+<path d="M74 71 Q84 78 94 71" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round"/></g>
+      <circle cx="140" cy="182" r="5.5" fill="#FFFFFF" stroke="#E2E2E6" stroke-width="2"/>
+    </svg>
+    <div class="sf-meta"><span class="pill" id="sfMood">有点困</span><span id="sfHint">它在你身边</span></div>
+  </div>
+
+  <div class="stream" id="stream">
+    <div class="sys" data-when="normal">小栈已连接 · 08:12</div>
+    <div class="turn">
+      <div class="bot">你今天回来得比昨天早。</div>
+      <div class="acts"><button class="act" data-act="nod">点头</button><button class="act" data-act="away">看别处</button><button class="act" data-act="lean">前倾</button></div>
+    </div>
+    <div class="turn"><div class="me">在等我？<span class="t">08:14</span></div></div>
+    <div class="turn">
+      <div class="bot">等了 23 分钟。不算久。</div>
+      <div class="acts"><button class="act" data-act="nod">点头</button><button class="act" data-act="away">看别处</button><button class="act" data-act="lean">前倾</button></div>
+    </div>
+    <div class="sys" data-when="normal"><div class="div"></div>小栈有点困了 · 08:19</div>
+    <div class="turn">
+      <div class="bot">……我先眯一会儿。你叫我。</div>
+      <div class="acts"><button class="act" data-act="nod">点头</button><button class="act" data-act="away">看别处</button><button class="act" data-act="lean">前倾</button></div>
+    </div>
+    <div class="turn"><div class="me">叫你了。<span class="t">08:21</span></div></div>
+  </div>
+
+  <div class="statebox" id="stateBox">
+    <div class="stateicons" id="stateIcons">
+      <svg class="si" data-ico="loading" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M12 2v4M12 18v4M2 12h4M18 12h4M5 5l2.8 2.8M16.2 16.2 19 19M19 5l-2.8 2.8M7.8 16.2 5 19"/><circle cx="12" cy="12" r="3.4"/></svg>
+      <svg class="si" data-ico="empty" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12.2c0 4.1-3.8 7.4-8.5 7.4-1 0-2-.15-2.9-.43L4 21l1.3-3.6C3.8 16.2 3.5 14.3 3.5 12.2 3.5 8.1 7.3 4.8 12 4.8s8.5 3.3 8.5 7.4Z"/></svg>
+      <svg class="si" data-ico="error" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.5 21 19H3L12 4.5Z"/><path d="M12 10v4M12 16.6v.1"/></svg>
+      <svg class="si" data-ico="offline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2 2l20 20"/><path d="M8.5 16.4a5 5 0 0 1 7 0"/><path d="M12 20h.01"/></svg>
+      <svg class="si" data-ico="permission" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3"/><path d="M3 3l18 18"/></svg>
+      <svg class="si" data-ico="firstrun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 8h3v3H8zM13 13h3v3h-3zM8 13h3M13 8h3"/></svg>
+    </div>
+    <h3 id="stateTitle">正在连接小栈</h3>
+    <p id="stateDesc">第一次连接需要几秒钟</p>
+    <div class="skel" id="stateSkel"><div></div><div></div><div></div></div>
+    <button class="recover" id="stateRecover" hidden>重试</button>
+  </div>
+
+  <div class="composer">
+    <div class="field"><input id="input" type="text" placeholder="跟小栈说点什么" autocomplete="off"></div>
+    <button class="mic" id="mic" aria-label="按住说话">
+      <svg class="ico" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#EDEDF0" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3"/></svg>
+      <svg class="wave" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0B0B18" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3"/></svg>
+    </button>
+    <button class="send" id="send" aria-label="发送" disabled>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0B0B18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M12.5 6.5 19 12l-6.5 5.5"/></svg>
+    </button>
+  </div>
+</section>
+
+<section class="page" id="p-stack" data-off="1" hidden>
+  <div class="statusbar" style="cursor:default">
+    <div class="sb-txt"><div class="sb-l1">小栈</div><div class="sb-l2">姿态与状态</div></div>
+    <div class="sb-batt"><span class="bar"><i></i></span><span>82%</span></div>
+  </div>
+  <div class="preview" id="preview">
+    <span class="tag">实时姿态</span><span class="hint">拖动头部即可控制</span>
+    <div class="stage3d"><div class="head3d" id="head3d">
+      <svg width="168" height="132" viewBox="0 0 168 132">
+        <ellipse cx="84" cy="122" rx="44" ry="7" fill="#D8D8DC"/>
+        <rect x="72" y="96" width="24" height="22" rx="9" fill="#C2C2C8"/>
+        <circle cx="84" cy="98" r="12" fill="#B0B0B8"/>
+        <rect x="34" y="20" width="100" height="80" rx="26" fill="#FFFFFF" stroke="#E2E2E6" stroke-width="1.6"/>
+        <rect x="44" y="30" width="80" height="56" rx="17" fill="#1C1C1E"/>
+        <circle cx="68" cy="54" r="9" fill="#fff" opacity=".22"/>
+<circle cx="100" cy="54" r="9" fill="#fff" opacity=".22"/>
+<circle cx="68" cy="54" r="5.4" fill="#fff"/>
+<circle cx="100" cy="54" r="5.4" fill="#fff"/>
+<path d="M74 71 Q84 78 94 71" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+        <circle cx="84" cy="106" r="3.6" fill="#FFFFFF" stroke="#E2E2E6" stroke-width="1"/>
+      </svg>
+    </div></div>
+  </div>
+  <div class="pose"><span id="poseTxt">左右 0° · 俯仰 42°</span></div>
+  <div class="readouts">
+    <div class="ro">情绪 <b id="roMood">困</b></div>
+    <div class="ro">电量 <b>82%</b></div>
+    <div class="ro">在场 <b>是</b></div>
+  </div>
+  <div class="caps" id="caps">
+    <button class="cap" data-cap="nod">点头</button><button class="cap" data-cap="shake">摇头</button>
+    <button class="cap" data-cap="away">看别处</button><button class="cap" data-cap="lean">前倾</button>
+    <button class="cap" data-cap="back">后退</button><button class="cap" data-cap="chin">抬下巴</button>
+    <button class="cap" data-cap="down">低头</button><button class="cap" data-cap="hi">打招呼</button>
+  </div>
+</section>
+
+<nav class="tabbar" role="tablist">
+  <button class="tab" role="tab" aria-selected="true" data-tab="chat">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 12.2c0 4.1-3.8 7.4-8.5 7.4-1 0-2-.15-2.9-.43L4 21l1.3-3.6C3.8 16.2 3.5 14.3 3.5 12.2 3.5 8.1 7.3 4.8 12 4.8s8.5 3.3 8.5 7.4Z"/></svg>
+    <span>陪伴</span></button>
+  <button class="tab" role="tab" aria-selected="false" data-tab="stack">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="6" width="15" height="12" rx="4"/><path d="M12 18v2.5M9.5 23h5"/><circle cx="9.6" cy="11.4" r="1.1" fill="currentColor" stroke="none"/><circle cx="14.4" cy="11.4" r="1.1" fill="currentColor" stroke="none"/></svg>
+    <span>小栈</span></button>
+</nav>
+
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet" role="dialog" aria-label="设置">
+  <div class="grab"></div>
+  <div class="grp"><h4>陪伴</h4>
+    <div class="row"><span class="lbl">小栈的名字</span><span class="val">小栈</span></div>
+    <div class="row"><span class="lbl">主动性</span><button class="switch" id="swActive" data-on="1" role="switch" aria-checked="true" aria-label="主动性"></button></div>
+    <div class="row"><span class="lbl">记住我的事</span><button class="switch" id="swMemory" data-on="1" role="switch" aria-checked="true" aria-label="记住我的事"></button></div>
+  </div>
+  <div class="grp"><h4>设备</h4>
+    <div class="row"><span class="lbl">舵机校准</span><button class="val" id="btnCal" style="border:none;background:none;font-family:inherit;font-size:13px;color:var(--accent);cursor:pointer">开始校准</button></div>
+    <div class="row"><span class="lbl">亮度</span><span class="stepper"><button id="brDown" aria-label="降低亮度">−</button><span id="brVal">70%</span><button id="brUp" aria-label="提高亮度">+</button></span></div>
+    <div class="row"><span class="lbl">声音</span><button class="switch" id="swSound" data-on="1" role="switch" aria-checked="true" aria-label="声音"></button></div>
+  </div>
+  <div class="grp"><h4>通用</h4>
+    <div class="row"><span class="lbl">通知</span><span class="val">仅 4 类</span></div>
+    <div class="row"><span class="lbl">关于</span><span class="val">StackChan 0.1</span></div>
+  </div>
+</div>
+</div>
+
+<div class="sysblock"><h2>通知 · 只有 4 类</h2>
+  <div class="notif"><svg class="ni" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="2.5" y="7" width="17" height="10" rx="3"/><path d="M21 10.5v3"/><rect x="5" y="10" width="6" height="4" rx="1" fill="currentColor" stroke="none"/></svg><div><div class="ttl">电量偏低</div><div class="sub">小栈还能陪你 40 分钟</div></div></div>
+  <div class="notif"><svg class="ni" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.6V12l3 2"/></svg><div><div class="ttl">好久没见了</div><div class="sub">小栈一直等着你</div></div></div>
+  <div class="notif"><svg class="ni" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4 6.5h16v10H9l-5 4v-14Z"/></svg><div><div class="ttl">小栈想说话</div><div class="sub">它好像有话要说</div></div></div>
+  <div class="notif"><svg class="ni" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 4.5 21 19H3L12 4.5Z"/><path d="M12 10v4M12 16.6v.1"/></svg><div><div class="ttl">设备异常</div><div class="sub">存储空间已满，需要清理</div></div></div>
+</div>
+
+<div class="sysblock"><h2>Live Activity · 紧凑态 / 展开态</h2>
+  <div class="larow">
+    <div class="lacompact">
+      <svg width="17" height="17" viewBox="0 0 44 44"><rect x="6" y="10" width="32" height="24" rx="9" fill="#fff"/><circle cx="17" cy="21" r="2.8" fill="#111"/><circle cx="27" cy="21" r="2.8" fill="#111"/><path d="M17 27q5 3 10 0" stroke="#111" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><path d="M4 12h15M12.5 6.5 19 12l-6.5 5.5"/></svg>
+    </div>
+    <div class="laexp">
+      <div class="txt"><div class="t1">小栈在等你</div><div class="t2">“你回来啦，我刚刚在想你。”</div></div>
+      <button id="laBtn">叫我</button>
+    </div>
+  </div>
+</div>
+
+<div class="scaffold"><h4>演示脚手架 · 六态切换（不属于 App 界面）</h4>
+  <div class="sgrid" id="sgrid">
+    <button class="sbtn" data-st="normal" aria-pressed="true">正常</button>
+    <button class="sbtn" data-st="loading" aria-pressed="false">加载中</button>
+    <button class="sbtn" data-st="empty" aria-pressed="false">空对话</button>
+    <button class="sbtn" data-st="error" aria-pressed="false">出错</button>
+    <button class="sbtn" data-st="offline" aria-pressed="false">离线</button>
+    <button class="sbtn" data-st="permission" aria-pressed="false">权限拒绝</button>
+    <button class="sbtn" data-st="firstrun" aria-pressed="false">首次使用</button>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+var $=function(s){return document.querySelector(s)},$$=function(s){return Array.prototype.slice.call(document.querySelectorAll(s))};
+
+/* I-1 Tab 切换 */
+var pages={chat:$('#p-chat'),stack:$('#p-stack')};
+$$('.tab').forEach(function(t){t.addEventListener('click',function(){
+  var k=t.dataset.tab;
+  $$('.tab').forEach(function(x){x.setAttribute('aria-selected',String(x===t))});
+  Object.keys(pages).forEach(function(name){
+    var p=pages[name],on=(name===k);
+    if(on){p.hidden=false;p.dataset.off='0';}
+    else{p.dataset.off=(name==='chat'?'1':'2');
+      setTimeout(function(){if(p.dataset.off!=='0')p.hidden=true;},280);}
+  });
+});});
+
+/* I-2 发送消息 → 正在想 → 流式回复 */
+var stream=$('#stream'),input=$('#input'),send=$('#send');
+input.addEventListener('input',function(){send.disabled=!input.value.trim()});
+function mkMe(txt){
+  var d=document.createElement('div');d.className='me';
+  var s=document.createElement('span');s.textContent=txt;
+  var t=document.createElement('span');t.className='t';t.textContent='刚刚';
+  d.appendChild(s);d.appendChild(t);return d;
+}
+function scrollEnd(){stream.scrollTop=stream.scrollHeight}
+function botSay(text){
+  var t=document.createElement('div');t.className='turn';
+  var b=document.createElement('div');b.className='bot';t.appendChild(b);
+  stream.appendChild(t);scrollEnd();
+  var i=0;var timer=setInterval(function(){
+    i++;b.textContent=text.slice(0,i);
+    if(i%3===0)scrollEnd();
+    if(i>=text.length){clearInterval(timer);bindActs(t);scrollEnd();}
+  },26);
+}
+function think(on){
+  var ti=$('#sbTitle'),sb=$('#sbSub');
+  if(on){ti.textContent='小栈 · 正在想';sb.textContent='在你身边 · 刚刚';setMood('想')}
+  else{ti.textContent='小栈 · 有点困';sb.textContent='在你身边 · 刚刚';setMood('困')}
+}
+function setMood(m,hint){
+  var mo=$('#roMood'),sm=$('#sfMood'),sh=$('#sfHint');
+  if(mo)mo.textContent=m;
+  if(sm)sm.textContent=m;
+  if(hint!==undefined&&sh)sh.textContent=hint;
+}
+/* 气泡轻触 → 动作键浮现 */
+$$('.turn .bot').forEach(function(bot){
+  bot.classList.add('tappable');
+  bot.addEventListener('click',function(){
+    var acts=bot.parentElement.querySelector('.acts');
+    if(!acts)return;
+    var wasOn=acts.dataset.on==='1';
+    $$('.acts').forEach(function(a){a.dataset.on='0'});
+    if(!wasOn)acts.dataset.on='1';
+  });
+});
+send.addEventListener('click',function(){
+  var v=input.value.trim();if(!v)return;
+  input.value='';send.disabled=true;
+  stream.appendChild(mkMe(v));
+  scrollEnd();think(true);
+  setTimeout(function(){
+    think(false);
+    botSay('嗯，我听着呢。你继续说。');
+  },1100);
+});
+
+/* I-4 气泡动作键 → 联动 3D 脸与姿态 */
+var ACTS={nod:{y:0,p:52,d:'点头'},away:{y:-96,p:40,d:'看别处'},lean:{y:6,p:22,d:'前倾'},
+          shake:{y:0,p:42,d:'摇头'},back:{y:0,p:62,d:'后退'},chin:{y:0,p:12,d:'抬下巴'},
+          down:{y:0,p:80,d:'低头'},hi:{y:0,p:38,d:'打招呼'}};
+var yaw=0,pitch=42;
+function applyPose(){
+  $('#head3d').style.transform='rotateY('+(yaw*0.42)+'deg) rotateX('+(-(pitch-42)*0.42)+'deg)';
+  $('#poseTxt').textContent='左右 '+Math.round(yaw)+'° · 俯仰 '+Math.round(pitch)+'°';
+}
+function doAct(k,src){
+  var a=ACTS[k];if(!a)return;
+  yaw=a.y;pitch=a.p;applyPose();
+  if(src){src.querySelectorAll('.act').forEach(function(b){b.removeAttribute('data-on')});src.dataset.on='1';}
+  setTimeout(function(){yaw=0;pitch=42;applyPose();},900);
+}
+function bindActs(turn){
+  var acts=turn.querySelectorAll('.act');
+  if(!acts.length)return;
+  acts.forEach(function(b){b.addEventListener('click',function(e){e.stopPropagation();doAct(b.dataset.act,b);});});
+}
+$$('.turn').forEach(bindActs);
+$$('.cap').forEach(function(c){c.addEventListener('click',function(){
+  $$('.cap').forEach(function(x){x.removeAttribute('data-on')});c.dataset.on='1';
+  doAct(c.dataset.cap,null);
+});});
+
+/* I-3 麦克风按住说话 */
+var mic=$('#mic');
+mic.addEventListener('pointerdown',function(){mic.dataset.on='1';$('#sbTitle').textContent='小栈 · 在听'});
+['pointerup','pointercancel','pointerleave'].forEach(function(ev){mic.addEventListener(ev,function(){
+  mic.dataset.on='0';$('#sbTitle').textContent='小栈 · 有点困';});});
+
+/* I-5 3D 姿态拖拽 */
+var pv=$('#preview'),head=$('#head3d'),dragging=false,sx=0,sy=0,by=0,bp=42;
+pv.addEventListener('pointerdown',function(e){dragging=true;head.classList.add('drag');
+  sx=e.clientX;sy=e.clientY;by=yaw;bp=pitch;pv.setPointerCapture(e.pointerId)});
+pv.addEventListener('pointermove',function(e){if(!dragging)return;
+  var dx=e.clientX-sx,dy=e.clientY-sy;
+  yaw=Math.max(-128,Math.min(128,by+dx*0.85));
+  pitch=Math.max(3,Math.min(87,bp-dy*0.85));
+  applyPose();});
+['pointerup','pointercancel'].forEach(function(ev){pv.addEventListener(ev,function(){
+  dragging=false;head.classList.remove('drag');});});
+
+/* I-7 状态条下滑隐藏（不抢 pointer capture，否则状态条里的设置齿轮点不到） */
+var sb=$('#statusbar'),sbDrag=false,sbY=0,sbCollapsed=false;
+sb.addEventListener('pointerdown',function(e){sbDrag=true;sbY=e.clientY;});
+window.addEventListener('pointermove',function(e){if(!sbDrag)return;
+  var dy=e.clientY-sbY;
+  if(dy>6&&!sbCollapsed){sbCollapsed=true;sb.dataset.collapsed='1'}
+  else if(dy<-6&&sbCollapsed){sbCollapsed=false;sb.dataset.collapsed='0'}});
+['pointerup','pointercancel'].forEach(function(ev){window.addEventListener(ev,function(){sbDrag=false})});
+
+/* I-8 设置 Sheet */
+function openSheet(on){$('#scrim').dataset.on=on?'1':'0';$('#sheet').dataset.on=on?'1':'0'}
+$('#btnSettings').addEventListener('click',function(){openSheet(true)});
+$('#scrim').addEventListener('click',function(){openSheet(false)});
+$$('.switch').forEach(function(s){s.addEventListener('click',function(){
+  var on=s.dataset.on==='1';s.dataset.on=on?'0':'1';s.setAttribute('aria-checked',String(!on));
+  if(s.id==='swActive')$('#sbSub').textContent=on?'在你身边 · 刚刚':'安静模式 · 不主动说话';
+  if(s.id==='swMemory')$('#sbSub').textContent=on?'在你身边 · 刚刚':'不会记住你说的事';
+})});
+var brv=70;function brShow(){$('#brVal').textContent=brv+'%'}
+$('#brUp').addEventListener('click',function(){brv=Math.min(100,brv+10);brShow()});
+$('#brDown').addEventListener('click',function(){brv=Math.max(10,brv-10);brShow()});
+$('#btnCal').addEventListener('click',function(){var b=$('#btnCal');b.textContent='校准中…';
+  setTimeout(function(){b.textContent='已完成';$('#sbSub').textContent='已校准 · 刚刚'},1400)});
+
+/* I-10 Live Activity 动作 */
+$('#laBtn').addEventListener('click',function(){
+  $('#sbTitle').textContent='小栈 · 看到你了';
+  setTimeout(function(){$('#sbTitle').textContent='小栈 · 有点困'},1600);
+});
+
+/* 六态切换 */
+var STATES={
+ normal:{t:'',d:'',recover:null,icon:'<path d="M12 3v9M3.6 12h16.8M12 21v-9"/><circle cx="12" cy="12" r="3"/>',skel:false},
+ loading:{t:'正在连接小栈',d:'第一次连接需要几秒钟',recover:null,
+   icon:'<path d="M12 2v4M12 18v4M2 12h4M18 12h4M5 5l2.8 2.8M16.2 16.2 19 19M19 5l-2.8 2.8M7.8 16.2 5 19"/><circle cx="12" cy="12" r="3.4"/>',skel:true},
+ empty:{t:'还没有聊过天',d:'跟小栈说第一句话吧',recover:null,icon:'<path d="M20.5 12.2c0 4.1-3.8 7.4-8.5 7.4-1 0-2-.15-2.9-.43L4 21l1.3-3.6C3.8 16.2 3.5 14.3 3.5 12.2 3.5 8.1 7.3 4.8 12 4.8s8.5 3.3 8.5 7.4Z"/>',skel:false},
+ error:{t:'小栈没接上',d:'设备可能断开了，检查一下连接再试',recover:'重新连接',
+   icon:'<path d="M12 4.5 21 19H3L12 4.5Z"/><path d="M12 10v4M12 16.6v.1"/>',skel:false},
+ offline:{t:'小栈离线了',d:'聊天还能继续，设备相关的动作暂时用不了',recover:'重新连接',
+   icon:'<path d="M2 2l20 20"/><path d="M8.5 16.4a5 5 0 0 1 7 0"/><path d="M5 13a10 10 0 0 1 3.2-2.1"/><path d="M15.8 10.9A10 10 0 0 1 19 13"/><path d="M12 20h.01"/>',skel:false},
+ permission:{t:'需要麦克风权限',d:'不给权限就只能打字跟小栈说话了',recover:'去设置',
+   icon:'<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3"/><path d="M3 3l18 18"/>',skel:false},
+ firstrun:{t:'把小栈接上',d:'扫一下小栈身上的码，或者用 Wi-Fi 配网',recover:'开始配对',
+   icon:'<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 8h3v3H8zM13 13h3v3h-3zM8 13h3M13 8h3"/>',skel:false}
+};
+var box=$('#stateBox');
+function setState(k){
+  var s=STATES[k];
+  $$('.sbtn').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.st===k))});
+  if(k==='normal'){box.dataset.on='0';return}
+  box.dataset.on='1';
+  $('#stateTitle').textContent=s.t;
+  $('#stateDesc').textContent=s.d;
+  $$('#stateIcons .si').forEach(function(x){x.removeAttribute('data-on')});
+  var ico=$('#stateIcons .si[data-ico="'+k+'"]');if(ico)ico.dataset.on='1';
+  $('#stateSkel').style.display=s.skel?'':'none';
+  var rc=$('#stateRecover');
+  if(s.recover){rc.hidden=false;rc.textContent=s.recover}
+  else{rc.hidden=true}
+  $$('.stream .turn, .stream .sys').forEach(function(n){n.style.display='none'});
+}
+$$('.sbtn').forEach(function(b){b.addEventListener('click',function(){
+  var k=b.dataset.st;
+  if(k==='normal'){$$('.stream .turn, .stream .sys').forEach(function(n){n.style.display=''});
+    $$('.sbtn').forEach(function(x){x.setAttribute('aria-pressed',String(x===b))});
+    box.dataset.on='0';return}
+  setState(k);
+})});
+$('#stateRecover').addEventListener('click',function(){
+  $('#stateRecover').hidden=true;
+  box.dataset.on='0';
+  $$('.stream .turn, .stream .sys').forEach(function(n){n.style.display=''});
+  $$('.sbtn').forEach(function(x){x.setAttribute('aria-pressed',String(x.dataset.st==='normal'))});
+  $('#sbTitle').textContent='小栈 · 有点困';
+});
+
+applyPose();
+})();
+</script>
+</body>
+</html>

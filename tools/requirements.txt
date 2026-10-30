@@ -1,0 +1,18 @@
+# StackChan tools/ —— 运行依赖
+#
+# 只列**代码里真实 import** 的第三方包（本机 py -3.12 实测版本）。
+# 安装：py -3.12 -m pip install -r tools/requirements.txt
+#
+# ⚠️ 大部分工具**不需要**任何 API Key 就能跑通：
+#    `demo_offline.py` 无 key 时用离线合成的类语音信号；
+#    加 `--tts` 才需要 `MINIMAX_API_KEY`（从用户级环境变量读，不落盘）。
+
+numpy>=1.26.4          # 韵律提取（prosody_to_motion.py / demo_offline.py）
+scipy>=1.17.1          # PCHIP 插值 / Butterworth / 中值滤波 / find_peaks / wavfile
+websockets>=15.0.1     # WS 服务端与客户端（stackchan_server.py / protocol_sim.py）
+
+# ── 以下按需启用：只有用到对应功能才需要装 ──
+# bleak>=0.22.0        # 真机 BLE 驱动（stackchan_ble.py / ble_acceptance.py）
+#                       # ⚠ bleak 只在 Windows/macOS/Linux 有原生后端；
+#                       #   BLE 相关的两个工具在没装 bleak 时会**优雅降级**（报「未安装」而非崩溃）。
+# pillow>=10.0.0       # README hero 动图渲染（tools/make_readme_hero.py，若已合入）

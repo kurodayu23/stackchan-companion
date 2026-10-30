@@ -1,0 +1,731 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		3221580268DFBD54EA9CF1A3 /* StackChanCompanionApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CA4B0467E12DF2035497BB9 /* StackChanCompanionApp.swift */; };
+		C93DFEF6AE1C460B53858145 /* RootScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08E500E93B1FA509D1FF539B /* RootScene.swift */; };
+		CBFC23FB96521F64E76AF7C6 /* Conversation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39BBF1743075EAA865F1D733 /* Conversation.swift */; };
+		3D4499E01B12CF6961D6414F /* DeviceState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C433DEBBCCEDE4FD6F15D6C /* DeviceState.swift */; };
+		32741400005959423F117A8A /* Message.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A203A6BABF80C9700C39E89 /* Message.swift */; };
+		5AB2930F7A4867DE708BA695 /* Mood.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9307AD8959076DDC6959E1C /* Mood.swift */; };
+		E04F74B7187BC6AE2433E52B /* Presence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63B4C4FE673FFD8F0F1003E9 /* Presence.swift */; };
+		6859787DD5AB4FF815B02901 /* Glass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AAC35318168687983860579 /* Glass.swift */; };
+		B4E4A5DFC076546A10EBF666 /* Motion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 674DF4E50FB7D14946C5B00C /* Motion.swift */; };
+		0CE60BEBC59AD594C753390F /* Shapes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47FC4772DF50C0E4A2C4550E /* Shapes.swift */; };
+		8992F9AFE7DD2323F175B306 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47AC530DF95244E8F955FBF6 /* Theme.swift */; };
+		72D89C5EF1ABD5631FBC88C4 /* Tokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73C5A0855E6E653F14D94856 /* Tokens.swift */; };
+		F37C054CA7163FDA45DA7FAB /* Typography.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66356685DAFB4210BEC324BC /* Typography.swift */; };
+		4DD02B8C9CBB8830E2EE6172 /* ActionKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98F3B2E6C16C66722F67842B /* ActionKeys.swift */; };
+		FFFCF536525087F8D68A4F4B /* Composer.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6D9E8D94F20559F50B04A9E /* Composer.swift */; };
+		010A3F702D87B95BC60739B2 /* CompanionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46C7E067E1DF70EFE19F5130 /* CompanionView.swift */; };
+		DFE6163416687BF2CEE0429F /* MessageRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB552B9A3F5DA07310F82D35 /* MessageRow.swift */; };
+		97B781C421C21824D44EC387 /* MicButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68D8E20162FABE160240EC05 /* MicButton.swift */; };
+		733D937FBC0CD85644B523EC /* StatusBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23F01973EF56B4CF70ACC211 /* StatusBar.swift */; };
+		AFB20874603FB735AD11AA25 /* LiveActivityController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F67AF1501A9DC683F2637254 /* LiveActivityController.swift */; };
+		B96BC0A3075C3D5131D78A52 /* SettingsScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5447D0B532EA29069515DAA0 /* SettingsScene.swift */; };
+		4B79CE81FB770A0E5120C87B /* ActionCapsules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2AB0F3B54E4105E055AEA555 /* ActionCapsules.swift */; };
+		D4F29F2875C3C1058D948D45 /* PosturePreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 635848E2D0E6DE187B437EAE /* PosturePreview.swift */; };
+		A81DFD3CDE09CFAA727001C1 /* PostureReadout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3523BFD727197F6D402224AA /* PostureReadout.swift */; };
+		4789E6617BE3E8FF1C3D74FA /* StackView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 990C4C8A4505A82C0C57DF44 /* StackView.swift */; };
+		E18D3D643DFA35FA87E6B7A5 /* ArchiveStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7140E8731374CE68C1AE9712 /* ArchiveStore.swift */; };
+		74671A275823E8C4ECFEE76A /* StackChanAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D553F95B0EDE21470D0A8B4 /* StackChanAttributes.swift */; };
+		65A19C43E5B15D379BF87210 /* StackChanLiveActivityWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB3FA3ECE956F879FEE06C67 /* StackChanLiveActivityWidget.swift */; };
+		49E9AC25E097579F448B97EA /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 742FD939C9BDD34EA79AB14C /* Assets.xcassets */; };
+		DD771ED99C848893484BFB21 /* StackChanShared.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C12E51613CD2488ADD88C50D /* StackChanShared.framework */; };
+		6980E0FA04BE13CC1F0F22DB /* StackChanShared.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = C12E51613CD2488ADD88C50D /* StackChanShared.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		8E47304682D48D9CD6CA8701 /* StackChanShared.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C12E51613CD2488ADD88C50D /* StackChanShared.framework */; };
+		BA0E8F2793F609EF8C734456 /* StackChanCompanionWidgetExtension.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = BE322880C0426E80BEABD382 /* StackChanCompanionWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		D9A19F392A7321E2D6E58BDD /* CoreProtocol in Frameworks */ = {isa = PBXBuildFile; productRef = F1C75F747CECCB3161B0EBF6 /* CoreProtocol */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		DBDC9D5F7F1155D057AED86F /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 778ABFAB37EE8DDA1A8C7300 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C19587B6752C12D58DD251DD;
+			remoteInfo = StackChanShared;
+		};
+		32C9AFED3135A99E8E76B8D5 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 778ABFAB37EE8DDA1A8C7300 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 746498C0E9F35150DDB41851;
+			remoteInfo = StackChanCompanionWidgetExtension;
+		};
+		F848291ED52544AB1526D677 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 778ABFAB37EE8DDA1A8C7300 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C19587B6752C12D58DD251DD;
+			remoteInfo = StackChanShared;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		EE3B9F415BE60C376BEB1184 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				6980E0FA04BE13CC1F0F22DB /* StackChanShared.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		6FFB85D19C3CDF0131E13151 /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				BA0E8F2793F609EF8C734456 /* StackChanCompanionWidgetExtension.appex in Embed App Extensions */,
+			);
+			name = "Embed App Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		1CA4B0467E12DF2035497BB9 /* StackChanCompanionApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StackChanCompanionApp.swift; sourceTree = "<group>"; };
+		08E500E93B1FA509D1FF539B /* RootScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootScene.swift; sourceTree = "<group>"; };
+		39BBF1743075EAA865F1D733 /* Conversation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Conversation.swift; sourceTree = "<group>"; };
+		4C433DEBBCCEDE4FD6F15D6C /* DeviceState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceState.swift; sourceTree = "<group>"; };
+		8A203A6BABF80C9700C39E89 /* Message.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Message.swift; sourceTree = "<group>"; };
+		D9307AD8959076DDC6959E1C /* Mood.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Mood.swift; sourceTree = "<group>"; };
+		63B4C4FE673FFD8F0F1003E9 /* Presence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Presence.swift; sourceTree = "<group>"; };
+		3AAC35318168687983860579 /* Glass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Glass.swift; sourceTree = "<group>"; };
+		674DF4E50FB7D14946C5B00C /* Motion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Motion.swift; sourceTree = "<group>"; };
+		47FC4772DF50C0E4A2C4550E /* Shapes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Shapes.swift; sourceTree = "<group>"; };
+		47AC530DF95244E8F955FBF6 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		73C5A0855E6E653F14D94856 /* Tokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tokens.swift; sourceTree = "<group>"; };
+		66356685DAFB4210BEC324BC /* Typography.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Typography.swift; sourceTree = "<group>"; };
+		98F3B2E6C16C66722F67842B /* ActionKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionKeys.swift; sourceTree = "<group>"; };
+		C6D9E8D94F20559F50B04A9E /* Composer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Composer.swift; sourceTree = "<group>"; };
+		46C7E067E1DF70EFE19F5130 /* CompanionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompanionView.swift; sourceTree = "<group>"; };
+		CB552B9A3F5DA07310F82D35 /* MessageRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageRow.swift; sourceTree = "<group>"; };
+		68D8E20162FABE160240EC05 /* MicButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MicButton.swift; sourceTree = "<group>"; };
+		23F01973EF56B4CF70ACC211 /* StatusBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBar.swift; sourceTree = "<group>"; };
+		F67AF1501A9DC683F2637254 /* LiveActivityController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityController.swift; sourceTree = "<group>"; };
+		5447D0B532EA29069515DAA0 /* SettingsScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsScene.swift; sourceTree = "<group>"; };
+		2AB0F3B54E4105E055AEA555 /* ActionCapsules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionCapsules.swift; sourceTree = "<group>"; };
+		635848E2D0E6DE187B437EAE /* PosturePreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PosturePreview.swift; sourceTree = "<group>"; };
+		3523BFD727197F6D402224AA /* PostureReadout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostureReadout.swift; sourceTree = "<group>"; };
+		990C4C8A4505A82C0C57DF44 /* StackView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StackView.swift; sourceTree = "<group>"; };
+		7140E8731374CE68C1AE9712 /* ArchiveStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArchiveStore.swift; sourceTree = "<group>"; };
+		3D553F95B0EDE21470D0A8B4 /* StackChanAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StackChanAttributes.swift; sourceTree = "<group>"; };
+		BB3FA3ECE956F879FEE06C67 /* StackChanLiveActivityWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StackChanLiveActivityWidget.swift; sourceTree = "<group>"; };
+		742FD939C9BDD34EA79AB14C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		E88BB58D8BE5ECB934B37FEC /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		FE4DEB5693895EAD0752EFD2 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		72F8E1290E61CC0305B6A8CF /* StackChanCompanion.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = StackChanCompanion.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		BE322880C0426E80BEABD382 /* StackChanCompanionWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = StackChanCompanionWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		C12E51613CD2488ADD88C50D /* StackChanShared.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = StackChanShared.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		F3ADA9899420388956145B5F /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D9A19F392A7321E2D6E58BDD /* CoreProtocol in Frameworks */,
+				DD771ED99C848893484BFB21 /* StackChanShared.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AD6DE24B06977BCDBF2B00E8 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8E47304682D48D9CD6CA8701 /* StackChanShared.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8F4D972397AEEAA323652102 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		B8D48DA513E3A38E6E799502 /* StackChanCompanion */ = {
+			isa = PBXGroup;
+			children = (
+				37810C5BBA4AFBDAF2A524A9,
+				E2286A889190CFA35D955DEB,
+				350AF2AC9835598F86CFE434,
+				65F0E4E374E7E3C17E4FC803
+			);
+			name = StackChanCompanion;
+			sourceTree = "<group>";
+		};
+		37810C5BBA4AFBDAF2A524A9 /* StackChanCompanion */ = {
+			isa = PBXGroup;
+			children = (
+				9CAFD515735F88B7B0A137D9,
+				CEE7BC8A24E27171A1CEBD27,
+				BF1E7056BBA1917DA206CC9A,
+				9B15EEC282D30CCB9E80761A,
+				EE54CF23B1DE056F931BC9C1
+			);
+			name = StackChanCompanion;
+			sourceTree = "<group>";
+		};
+		9CAFD515735F88B7B0A137D9 /* DesignSystem */ = {
+			isa = PBXGroup;
+			children = (
+				73C5A0855E6E653F14D94856,
+				47AC530DF95244E8F955FBF6,
+				66356685DAFB4210BEC324BC,
+				674DF4E50FB7D14946C5B00C,
+				47FC4772DF50C0E4A2C4550E,
+				3AAC35318168687983860579
+			);
+			name = DesignSystem;
+			sourceTree = "<group>";
+		};
+		CEE7BC8A24E27171A1CEBD27 /* CoreModel */ = {
+			isa = PBXGroup;
+			children = (
+				39BBF1743075EAA865F1D733,
+				8A203A6BABF80C9700C39E89,
+				D9307AD8959076DDC6959E1C,
+				63B4C4FE673FFD8F0F1003E9,
+				4C433DEBBCCEDE4FD6F15D6C
+			);
+			name = CoreModel;
+			sourceTree = "<group>";
+		};
+		BF1E7056BBA1917DA206CC9A /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				698274486759DB538B785AAA /* Companion */,
+				5289F6DF3A1A9D0BFE752464 /* Stack */,
+				4BF0A3592F21B24BFE9F4AB5 /* Settings */,
+				30079303059A972BF05C3863 /* LiveActivity */,
+			);
+			name = Features;
+			sourceTree = "<group>";
+		};
+		698274486759DB538B785AAA /* Companion */ = {
+			isa = PBXGroup;
+			children = (
+				46C7E067E1DF70EFE19F5130,
+				23F01973EF56B4CF70ACC211,
+				CB552B9A3F5DA07310F82D35,
+				C6D9E8D94F20559F50B04A9E,
+				68D8E20162FABE160240EC05,
+				98F3B2E6C16C66722F67842B
+			);
+			name = Companion;
+			sourceTree = "<group>";
+		};
+		5289F6DF3A1A9D0BFE752464 /* Stack */ = {
+			isa = PBXGroup;
+			children = (
+				990C4C8A4505A82C0C57DF44,
+				635848E2D0E6DE187B437EAE,
+				3523BFD727197F6D402224AA,
+				2AB0F3B54E4105E055AEA555
+			);
+			name = Stack;
+			sourceTree = "<group>";
+		};
+		4BF0A3592F21B24BFE9F4AB5 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				5447D0B532EA29069515DAA0
+			);
+			name = Settings;
+			sourceTree = "<group>";
+		};
+		30079303059A972BF05C3863 /* LiveActivity */ = {
+			isa = PBXGroup;
+			children = (
+				3D553F95B0EDE21470D0A8B4,
+				BB3FA3ECE956F879FEE06C67,
+				F67AF1501A9DC683F2637254,
+				FE4DEB5693895EAD0752EFD2
+			);
+			name = LiveActivity;
+			sourceTree = "<group>";
+		};
+		9B15EEC282D30CCB9E80761A /* Persistence */ = {
+			isa = PBXGroup;
+			children = (
+				7140E8731374CE68C1AE9712
+			);
+			name = Persistence;
+			sourceTree = "<group>";
+		};
+		EE54CF23B1DE056F931BC9C1 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				742FD939C9BDD34EA79AB14C,
+				E88BB58D8BE5ECB934B37FEC
+			);
+			name = Resources;
+			sourceTree = "<group>";
+		};
+		65F0E4E374E7E3C17E4FC803 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				72F8E1290E61CC0305B6A8CF,
+				BE322880C0426E80BEABD382,
+				C12E51613CD2488ADD88C50D
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		E2286A889190CFA35D955DEB /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		350AF2AC9835598F86CFE434 /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				3648E48683ED7E1EC510C7B6
+			);
+			name = Packages;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		801467698F3BA98EF5D13D76 /* StackChanCompanion */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = BB8EC3B776D23EB00FBDAE1E /* Build configuration list for PBXNativeTarget "StackChanCompanion" */;
+			buildPhases = (
+				654F9BD0E499485368C2872B /* Sources */,
+				F3ADA9899420388956145B5F /* Frameworks */,
+				1679A07BC6C4F56F3DDA0A72 /* Resources */,
+				EE3B9F415BE60C376BEB1184 /* Embed Frameworks */,
+				6FFB85D19C3CDF0131E13151 /* Embed App Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A1B1F8FB1BE587C0F8249A2E /* PBXTargetDependency */,
+				A5D5C78217C152FECC60CFC3 /* PBXTargetDependency */,
+			);
+			name = StackChanCompanion;
+			packageProductDependencies = (
+				F1C75F747CECCB3161B0EBF6 /* CoreProtocol */,
+			);
+			productName = StackChanCompanion;
+			productReference = 72F8E1290E61CC0305B6A8CF /* StackChanCompanion.app */;
+			productType = "com.apple.product-type.application";
+		};
+		746498C0E9F35150DDB41851 /* StackChanCompanionWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 6FBB95C81039F9AECA92F399 /* Build configuration list for PBXNativeTarget "StackChanCompanionWidgetExtension" */;
+			buildPhases = (
+				2E550CBEB6744CCE59D40589 /* Sources */,
+				AD6DE24B06977BCDBF2B00E8 /* Frameworks */,
+				060135645027E37765B3E3CF /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				B0F3A8A0333B2337AC2E984C /* PBXTargetDependency */,
+			);
+			name = StackChanCompanionWidgetExtension;
+			packageProductDependencies = (
+			);
+			productName = StackChanCompanionWidgetExtension;
+			productReference = BE322880C0426E80BEABD382 /* StackChanCompanionWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		C19587B6752C12D58DD251DD /* StackChanShared */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FC970C8B81A7936265BD756E /* Build configuration list for PBXNativeTarget "StackChanShared" */;
+			buildPhases = (
+				202307A874A9B15FEFD7BFB3 /* Sources */,
+				8F4D972397AEEAA323652102 /* Frameworks */,
+				AEE60D63773516A95943173A /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = StackChanShared;
+			packageProductDependencies = (
+			);
+			productName = StackChanShared;
+			productReference = C12E51613CD2488ADD88C50D /* StackChanShared.framework */;
+			productType = "com.apple.product-type.framework";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		778ABFAB37EE8DDA1A8C7300 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1500;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					801467698F3BA98EF5D13D76 = {
+						CreatedOnToolsVersion = 15.0;
+					};
+					746498C0E9F35150DDB41851 = {
+						CreatedOnToolsVersion = 15.0;
+					};
+					C19587B6752C12D58DD251DD = {
+						CreatedOnToolsVersion = 15.0;
+					};
+				};
+			};
+			buildConfigurationList = DECA06C612FA62A3388398FB /* Build configuration list for PBXProject "StackChanCompanion" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+				"zh-Hans",
+			);
+			mainGroup = B8D48DA513E3A38E6E799502;
+			packageReferences = (
+				3648E48683ED7E1EC510C7B6 /* XCLocalSwiftPackageReference "StackChanCompanion/CoreProtocol" */,
+			);
+			productRefGroup = 65F0E4E374E7E3C17E4FC803 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				801467698F3BA98EF5D13D76 /* StackChanCompanion */,
+				746498C0E9F35150DDB41851 /* StackChanCompanionWidgetExtension */,
+				C19587B6752C12D58DD251DD /* StackChanShared */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		1679A07BC6C4F56F3DDA0A72 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				49E9AC25E097579F448B97EA /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		060135645027E37765B3E3CF /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AEE60D63773516A95943173A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		654F9BD0E499485368C2872B /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3221580268DFBD54EA9CF1A3 /* StackChanCompanionApp.swift in Sources */,
+				C93DFEF6AE1C460B53858145 /* RootScene.swift in Sources */,
+				CBFC23FB96521F64E76AF7C6 /* Conversation.swift in Sources */,
+				3D4499E01B12CF6961D6414F /* DeviceState.swift in Sources */,
+				32741400005959423F117A8A /* Message.swift in Sources */,
+				5AB2930F7A4867DE708BA695 /* Mood.swift in Sources */,
+				E04F74B7187BC6AE2433E52B /* Presence.swift in Sources */,
+				6859787DD5AB4FF815B02901 /* Glass.swift in Sources */,
+				B4E4A5DFC076546A10EBF666 /* Motion.swift in Sources */,
+				0CE60BEBC59AD594C753390F /* Shapes.swift in Sources */,
+				8992F9AFE7DD2323F175B306 /* Theme.swift in Sources */,
+				72D89C5EF1ABD5631FBC88C4 /* Tokens.swift in Sources */,
+				F37C054CA7163FDA45DA7FAB /* Typography.swift in Sources */,
+				4DD02B8C9CBB8830E2EE6172 /* ActionKeys.swift in Sources */,
+				FFFCF536525087F8D68A4F4B /* Composer.swift in Sources */,
+				010A3F702D87B95BC60739B2 /* CompanionView.swift in Sources */,
+				DFE6163416687BF2CEE0429F /* MessageRow.swift in Sources */,
+				97B781C421C21824D44EC387 /* MicButton.swift in Sources */,
+				733D937FBC0CD85644B523EC /* StatusBar.swift in Sources */,
+				AFB20874603FB735AD11AA25 /* LiveActivityController.swift in Sources */,
+				B96BC0A3075C3D5131D78A52 /* SettingsScene.swift in Sources */,
+				4B79CE81FB770A0E5120C87B /* ActionCapsules.swift in Sources */,
+				D4F29F2875C3C1058D948D45 /* PosturePreview.swift in Sources */,
+				A81DFD3CDE09CFAA727001C1 /* PostureReadout.swift in Sources */,
+				4789E6617BE3E8FF1C3D74FA /* StackView.swift in Sources */,
+				E18D3D643DFA35FA87E6B7A5 /* ArchiveStore.swift in Sources */
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		202307A874A9B15FEFD7BFB3 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				74671A275823E8C4ECFEE76A /* StackChanAttributes.swift in Sources */
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2E550CBEB6744CCE59D40589 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				65A19C43E5B15D379BF87210 /* StackChanLiveActivityWidget.swift in Sources */
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		A1B1F8FB1BE587C0F8249A2E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = StackChanShared;
+			target = C19587B6752C12D58DD251DD /* StackChanShared */;
+			targetProxy = DBDC9D5F7F1155D057AED86F /* PBXContainerItemProxy */;
+		};
+		A5D5C78217C152FECC60CFC3 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = StackChanCompanionWidgetExtension;
+			target = 746498C0E9F35150DDB41851 /* StackChanCompanionWidgetExtension */;
+			targetProxy = 32C9AFED3135A99E8E76B8D5 /* PBXContainerItemProxy */;
+		};
+		B0F3A8A0333B2337AC2E984C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = StackChanShared;
+			target = C19587B6752C12D58DD251DD /* StackChanShared */;
+			targetProxy = F848291ED52544AB1526D677 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		DA38C2F350E7A12C993E8355 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				MARKETING_VERSION = 0.1.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_TESTABILITY = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				ONLY_ACTIVE_ARCH = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+			};
+			name = Debug;
+		};
+		A2DDC9169843F345E420BF21 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				MARKETING_VERSION = 0.1.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		847422B6AF33B27CFFB73069 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = StackChanCompanion/Resources/Info.plist;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.stackchan.companion;
+				PRODUCT_NAME = StackChanCompanion;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				DEBUG_INFORMATION_FORMAT = dwarf;
+			};
+			name = Debug;
+		};
+		9CD5B4652C60660697354EEC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = StackChanCompanion/Resources/Info.plist;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.stackchan.companion;
+				PRODUCT_NAME = StackChanCompanion;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		BFF19F953C4823432639C7B6 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = StackChanCompanion/Features/LiveActivity/Info.plist;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.stackchan.companion.widget;
+				PRODUCT_NAME = StackChanCompanionWidgetExtension;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				DEBUG_INFORMATION_FORMAT = dwarf;
+			};
+			name = Debug;
+		};
+		2CDA1CC6DF70A570E31665E2 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = StackChanCompanion/Features/LiveActivity/Info.plist;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.stackchan.companion.widget;
+				PRODUCT_NAME = StackChanCompanionWidgetExtension;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		BE073100C8782B1CDE9A8688 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEFINES_MODULE = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.stackchan.companion.shared;
+				PRODUCT_NAME = StackChanShared;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				DEBUG_INFORMATION_FORMAT = dwarf;
+			};
+			name = Debug;
+		};
+		5994A017A93E565E86CA8176 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEFINES_MODULE = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.stackchan.companion.shared;
+				PRODUCT_NAME = StackChanShared;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		DECA06C612FA62A3388398FB /* Build configuration list for PBXProject "StackChanCompanion" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				DA38C2F350E7A12C993E8355 /* Debug */,
+				A2DDC9169843F345E420BF21 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		BB8EC3B776D23EB00FBDAE1E /* Build configuration list for PBXNativeTarget "StackChanCompanion" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				847422B6AF33B27CFFB73069 /* Debug */,
+				9CD5B4652C60660697354EEC /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		6FBB95C81039F9AECA92F399 /* Build configuration list for PBXNativeTarget "StackChanCompanionWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BFF19F953C4823432639C7B6 /* Debug */,
+				2CDA1CC6DF70A570E31665E2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		FC970C8B81A7936265BD756E /* Build configuration list for PBXNativeTarget "StackChanShared" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BE073100C8782B1CDE9A8688 /* Debug */,
+				5994A017A93E565E86CA8176 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		3648E48683ED7E1EC510C7B6 /* XCLocalSwiftPackageReference "StackChanCompanion/CoreProtocol" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = StackChanCompanion/CoreProtocol;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		F1C75F747CECCB3161B0EBF6 /* CoreProtocol */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = CoreProtocol;
+		};
+/* End XCSwiftPackageProductDependency section */
+
+	};
+	rootObject = 778ABFAB37EE8DDA1A8C7300 /* Project object */;
+}
