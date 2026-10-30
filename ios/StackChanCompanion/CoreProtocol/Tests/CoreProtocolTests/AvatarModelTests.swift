@@ -20,15 +20,15 @@ final class AvatarModelTests: XCTestCase {
     }
 
     func testOpennessMapsWeightDirectly() {
-        XCTAssertEqual(WeightPolarity.openness(element: .eye, weight: 100), 1.0, accuracy: 0.0001)
-        XCTAssertEqual(WeightPolarity.openness(element: .eye, weight: 35), 0.35, accuracy: 0.0001)
+        XCTAssertEqual(WeightPolarity.openness(element: .leftEye, weight: 100), 1.0, accuracy: 0.0001)
+        XCTAssertEqual(WeightPolarity.openness(element: .leftEye, weight: 35), 0.35, accuracy: 0.0001)
         XCTAssertEqual(WeightPolarity.openness(element: .mouth, weight: 0), 0.0, accuracy: 0.0001)
         XCTAssertEqual(WeightPolarity.openness(element: .mouth, weight: 100), 1.0, accuracy: 0.0001)
     }
 
     func testOpennessClampsOutOfRangeWeight() {
-        XCTAssertEqual(WeightPolarity.openness(element: .eye, weight: 300), 1.0, accuracy: 0.0001)
-        XCTAssertEqual(WeightPolarity.openness(element: .eye, weight: -20), 0.0, accuracy: 0.0001)
+        XCTAssertEqual(WeightPolarity.openness(element: .leftEye, weight: 300), 1.0, accuracy: 0.0001)
+        XCTAssertEqual(WeightPolarity.openness(element: .leftEye, weight: -20), 0.0, accuracy: 0.0001)
     }
 
     // MARK: - 官方情绪表

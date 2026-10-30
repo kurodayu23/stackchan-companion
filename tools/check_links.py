@@ -48,6 +48,7 @@ import io
 import json
 import os
 import re
+import subprocess
 import sys
 from typing import Dict, List, Optional, Sequence, Tuple
 
@@ -257,6 +258,80 @@ def _exists(base: str, candidate: str) -> bool:
     return True
 
 
+def _resolve_repo_rel(repo: str, base: str, target: str) -> Optional[str]:
+    """把链接目标解析成**仓库相对**路径。
+
+    解析顺序与本仓文档惯例一致：先按所在 ``.md`` 的目录，再按仓库根。
+    ⚠️ 必须先解析再判忽略规则 —— 否则 `docs/research/75.md` 里的
+    ``runs/xxx.log`` 会被按仓库根解释成 ``<root>/runs/xxx.log``，
+    从而误判成「被 `*.log` 排除」（它其实已被 `!docs/research/runs/*.log` 反选）。
+    """
+    cand = _norm(target)
+    if not cand:
+        return None
+    for root in (base, repo):
+        try:
+            abs_p = os.path.normpath(os.path.join(root, cand))
+            rel = os.path.relpath(abs_p, repo).replace("\\", "/")
+        except ValueError:
+            continue
+        if rel.startswith(".."):
+            continue
+        if os.path.exists(os.path.join(repo, rel)):
+            return rel
+    return None
+
+
+def _is_local_artifact(repo: str, candidate: str, base: Optional[str] = None) -> bool:
+    """该路径是否是「本地生成物」（被 .gitignore 排除 ⇒ 克隆后不存在）。
+
+    ⚠️ 这一类**本机测不出来**：路径在本机真实存在（是构建/截图产物），
+    但克隆者拿到的是 404。
+    2026-10-30 首次公开发布后，GitHub Actions 在 ubuntu 上真抓到一个：
+    `STATUS.md` 指向 `prototype/mobile-v2/shots/`（本地生成物，被 .gitignore 排除）。
+
+    处置口径（两种语义分开）：
+      * **行内代码里的路径**：提到本地生成物是合法的说明 ⇒ 只记 INFO；
+      * **markdown 链接**：指向不入库的路径 ⇒ 读者点开就是 404 ⇒ FAIL。
+    """
+    if _is_gitignored(repo, candidate):
+        return True
+    if base is not None and _is_gitignored(repo, candidate, base):
+        return True
+    return False
+
+
+def _is_gitignored(repo: str, candidate: str, base: Optional[str] = None) -> bool:
+    """该路径是否被 .gitignore 排除（⇒ **新克隆后不存在**）。
+
+    ⚠️ 这一类坏链**本机测不出来**：路径在本机是真实存在的本地生成物，
+    但克隆者拿到的是 404。
+    2026-10-30 首次公开发布后，GitHub Actions 在 ubuntu 上真抓到一个：
+    `STATUS.md` 指向 `prototype/mobile-v2/shots/`（本地生成物，被 .gitignore 排除）。
+    ⇒ 本机门禁必须也能判它，否则只能靠 CI 兜底。
+
+    ``base`` 给出时，``candidate`` 按「相对 base 目录」解析（markdown 链接用）。
+    """
+    cand = _norm(candidate)
+    if not cand or cand.startswith("~"):
+        return False
+    if base is not None:
+        try:
+            abs_p = os.path.normpath(os.path.join(base, cand))
+            rel = os.path.relpath(abs_p, repo).replace("\\", "/")
+        except ValueError:
+            return False
+        if rel.startswith(".."):
+            return False
+        cand = rel
+    try:
+        proc = subprocess.run(["git", "-C", repo, "check-ignore", "-q", "--", cand],
+                              capture_output=True, timeout=30)
+    except (OSError, subprocess.SubprocessError):
+        return False
+    return proc.returncode == 0
+
+
 def _exists_with_prefix(base: str, candidate: str) -> bool:
     """存在性判定，并支持**编号前缀匹配**（``docs/spec/07`` ⇒ ``docs/spec/07-*.md``）。"""
     if _exists(base, candidate):
@@ -350,6 +425,11 @@ def check_markdown_links(repo: str, files: Sequence[str]) -> List[Finding]:
                         "裸文件名链接 —— 属上游仓，无法在本仓解析"))
                     continue
                 if _exists_with_prefix(base, bare) or _exists_with_prefix(repo, bare):
+                    resolved = _resolve_repo_rel(repo, base, bare)
+                    if resolved and _is_gitignored(repo, resolved):
+                        findings.append(Finding(
+                            "FAIL", rel, idx, target, "REPO-LINK",
+                            "链接目标存在但被 .gitignore 排除 ⇒ 新克隆后 404"))
                     continue
                 # 明确以 ``./`` / ``../`` 开头 ⇒ 相对本文件目录，解析不到就是坏链
                 if bare.startswith("./") or bare.startswith("../"):
@@ -404,6 +484,15 @@ def check_backtick_paths(repo: str, files: Sequence[str]) -> List[Finding]:
                         "已知设计-实现分歧：%s" % divergence))
                     continue
                 if _exists_with_prefix(repo, token):
+                    if _is_local_artifact(repo, token, os.path.dirname(path)):
+                        findings.append(Finding(
+                            "INFO", rel, idx, raw, ns,
+                            "本地生成物（被 .gitignore 排除，不随仓分发）"))
+                    continue
+                if _is_local_artifact(repo, token, os.path.dirname(path)):
+                    findings.append(Finding(
+                        "INFO", rel, idx, raw, ns,
+                        "本地生成物（被 .gitignore 排除，不随仓分发）"))
                     continue
                 findings.append(Finding(
                     "INFO" if _in_snapshot(rel) else "FAIL",
@@ -513,6 +602,25 @@ def _self_test() -> int:
                      encoding="utf-8", newline="") as fh:
             fh.write("# H\n\n`server/providers/local.py` 尚未实现。\n")
 
+        # ⚠️ 「本机存在、但被 .gitignore 排除 ⇒ 新克隆后 404」的坏链。
+        #    这类问题本机门禁原本看不见（路径真的在磁盘上），
+        #    是 2026-10-30 由 GitHub Actions 在 ubuntu 上真抓出来的。
+        #    ⚠️ 路径必须是**两段以上**（`_classify` 只把第二段存在的当仓库内命名空间）。
+        os.makedirs(os.path.join(tmp, "docs", "shots"))
+        with io.open(os.path.join(tmp, "docs", "shots", "a.png"), "w",
+                     encoding="utf-8", newline="") as fh:
+            fh.write("x")
+        with io.open(os.path.join(tmp, ".gitignore"), "w",
+                     encoding="utf-8", newline="") as fh:
+            fh.write("docs/shots/\n")
+        with io.open(os.path.join(tmp, "docs", "spec", "i.md"), "w",
+                     encoding="utf-8", newline="") as fh:
+            fh.write("# I\n\n见 `docs/shots/` 与 [图](../../docs/shots/a.png)。\n")
+        try:
+            subprocess.run(["git", "init", "-q", tmp], capture_output=True, timeout=60)
+        except (OSError, subprocess.SubprocessError):
+            pass
+
         res = scan(tmp)
         findings = res["findings"]  # type: ignore[index]
         texts = [(f["text"], f["kind"]) for f in findings]
@@ -521,6 +629,11 @@ def _self_test() -> int:
            not any(t == "tools/real.py" and k == "FAIL" for t, k in texts))
         ok("失效路径报 FAIL",
            any(t == "tools/gone.py" and k == "FAIL" for t, k in texts))
+        ok("被 .gitignore 排除的路径（行内）记 INFO 而非 FAIL",
+           any(t == "docs/shots/" and k == "INFO" for t, k in texts)
+           and not any(t == "docs/shots/" and k == "FAIL" for t, k in texts))
+        ok("被 .gitignore 排除的路径（markdown 链接）报 FAIL",
+           any("docs/shots/a.png" in str(t) and k == "FAIL" for t, k in texts))
         ok("编号前缀匹配不报 FAIL",
            not any(t == "docs/spec/07" and k == "FAIL" for t, k in texts))
         ok("上游标记行不报 FAIL",

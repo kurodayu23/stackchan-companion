@@ -39,6 +39,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # ⚠️ 必须钉 Xcode 版本，否则工程打不开：
+      #    xcodegen 默认生成 **objectVersion 77**（Xcode 16 格式），
+      #    而 macos-14 镜像**默认**的 Xcode 15.4 读不了它 ⇒
+      #    "The project 'StackChanCompanion' cannot be opened because it is in a
+      #     future Xcode project file format (77)"。
+      #    macos-14 镜像同时装了 15.0.1 / 15.1 / 15.2 / 15.3 / 15.4 / 16.1 / 16.2
+      #    （见 actions/runner-images 的镜像清单）⇒ 选 16.2。
+      - name: Select Xcode (工程格式需要 Xcode 16+)
+        run: |
+          set -euo pipefail
+          XCODE=/Applications/Xcode_16.2.app
+          if [ ! -d "$XCODE" ]; then
+            echo "::notice::镜像里没有 Xcode 16.2，退回默认 Xcode。"
+            XCODE=/Applications/Xcode.app
+          fi
+          echo "Using $XCODE"
+          sudo xcode-select -s "$XCODE/Contents/Developer"
+
       - name: Show toolchain
         run: |
           xcodebuild -version

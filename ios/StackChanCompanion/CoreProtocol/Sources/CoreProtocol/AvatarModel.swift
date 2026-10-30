@@ -164,12 +164,13 @@ public enum WeightPolarity {
     }
 
     /// 把固件语义下的 weight 换算成"开合度"（0 = 全闭，1 = 全开）。
-    /// - Parameter element: 元素类别（眼 / 嘴）。
+    /// - Parameter element: 元素（左右眼 / 嘴）。**左右眼共用同一套极性**，
+    ///   协议侧的三个键是 `leftEye` / `rightEye` / `mouth`（`docs/spec/03` §2.3）。
     /// - Parameter weight: 固件 weight（0 ~ 100）。
     public static func openness(element: AvatarElement, weight: Int) -> Double {
-        let clamped = min(max(weight, 0), 100) / 100.0
+        let clamped = Double(min(max(weight, 0), 100)) / 100.0
         switch element {
-        case .eye:
+        case .leftEye, .rightEye:
             return EyeWeight.inverted ? 1.0 - clamped : clamped
         case .mouth:
             return MouthWeight.inverted ? 1.0 - clamped : clamped

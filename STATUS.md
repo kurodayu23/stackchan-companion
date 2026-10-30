@@ -92,6 +92,6 @@ py -3.12 prototype\mobile-v2\serve2.py
 
 ## 八、明早你来了之后
 
-1. 先按 §四 打开页面看效果（截图也都在 `prototype/mobile-v2/shots/`）；
+1. 先按 §四 打开页面看效果（仓内定性截图见 [`assets/screenshots/mobile/`](assets/screenshots/mobile/)；Playwright 自查截图是**本地生成物**，被 `.gitignore` 排除，克隆后不存在）；
 2. 按 §五 处理真机联调（改 IP 或配网），我这边桥接+后端+mobile-v2 都还开着；
 3. 不满意的地方直接指出来（颜色 / 布局 / 摇杆大小 / 速度档），我照着改。
