@@ -79,17 +79,17 @@ public enum DanceSequence {
     /// - Returns: 关键帧数组
     /// - Throws: ``SchemaError`` 或 JSON 解析错误
     public static func decode(_ data: Data) throws -> [DanceKeyframe] {
-        let object: Any
+        let value: JSONValue
         do {
-            object = try JSONSerialization.jsonObject(with: data, options: [])
+            value = try JSONParser.parse(data)
         } catch {
             throw SchemaError.notAnArray(found: "invalid-json")
         }
-        return try decode(object)
+        return try decode(value)
     }
 
-    /// 解析并校验一个 0x14 payload（已经是 `Any` 的情况）。
-    public static func decode(_ value: Any) throws -> [DanceKeyframe] {
+    /// 解析并校验一个 0x14 payload（已经是 `JSONValue` 的情况）。
+    public static func decode(_ value: JSONValue) throws -> [DanceKeyframe] {
         // ⭐ 顶层必须是**数组**（固件 `parse_sequence_from_json` 读的是数组）
         let array = try JSONSchema.requireArray(value)
         guard !array.isEmpty else {
@@ -103,17 +103,19 @@ public enum DanceSequence {
     }
 
     /// 校验单个关键帧。
-    public static func validateKeyframe(_ value: Any, index: Int) throws -> DanceKeyframe {
+    public static func validateKeyframe(_ value: JSONValue, index: Int) throws -> DanceKeyframe {
         let path = "sequence[\(index)]"
         let root = try JSONSchema.requireObject(value)
         try JSONSchema.rejectUnknownKeys(root, allowed: DanceKeyframe.requiredKeys, path: path)
 
-        let leftEye = try JSONSchema.validateFeature(root, key: "leftEye")
-        let rightEye = try JSONSchema.validateFeature(root, key: "rightEye")
-        let mouth = try JSONSchema.validateFeature(root, key: "mouth")
+        let leftEye = try JSONSchema.validateFeature(root, key: "leftEye", pathPrefix: path)
+        let rightEye = try JSONSchema.validateFeature(root, key: "rightEye", pathPrefix: path)
+        let mouth = try JSONSchema.validateFeature(root, key: "mouth", pathPrefix: path)
 
-        let yaw = try JSONSchema.validateServo(root, key: "yawServo", isValid: ServoLimit.isValidYaw)
-        let pitch = try JSONSchema.validateServo(root, key: "pitchServo", isValid: ServoLimit.isValidPitch)
+        let yaw = try JSONSchema.validateServo(root, key: "yawServo",
+                                               isValid: ServoLimit.isValidYaw, pathPrefix: path)
+        let pitch = try JSONSchema.validateServo(root, key: "pitchServo",
+                                                 isValid: ServoLimit.isValidPitch, pathPrefix: path)
 
         let leftColor = try JSONSchema.requireString(root, key: "leftRgbColor", path: path)
         let rightColor = try JSONSchema.requireString(root, key: "rightRgbColor", path: path)
@@ -150,36 +152,41 @@ public enum DanceSequence {
     }
 
     /// 把关键帧数组编码成 payload（顶层 JSON 数组）。
+    ///
+    /// ⭐ 用**自研序列化器**（`JSONValue.serialized()`）而不是 `JSONSerialization`：
+    ///    后者会把整数重新写成 `10.0` 之类（取决于平台与 Foundation 版本），
+    ///    而固件 ArduinoJson 的 `is<int>()` 对**带小数点的字面量判 false**
+    ///    ⇒ 编码端必须保证整数就是整数，否则**我们自己编的帧会被固件静默忽略**。
     public static func encode(_ frames: [DanceKeyframe]) throws -> Data {
-        let array: [[String: Any]] = frames.map { frame in
-            [
-                "leftEye": featureToDict(frame.leftEye),
-                "rightEye": featureToDict(frame.rightEye),
-                "mouth": featureToDict(frame.mouth),
-                "yawServo": servoToDict(frame.yawServo),
-                "pitchServo": servoToDict(frame.pitchServo),
-                "leftRgbColor": frame.leftRgbColor,
-                "rightRgbColor": frame.rightRgbColor,
-                "durationMs": frame.durationMs
-            ]
+        let array: [JSONValue] = frames.map { frame in
+            .object([
+                "leftEye": featureToValue(frame.leftEye),
+                "rightEye": featureToValue(frame.rightEye),
+                "mouth": featureToValue(frame.mouth),
+                "yawServo": servoToValue(frame.yawServo),
+                "pitchServo": servoToValue(frame.pitchServo),
+                "leftRgbColor": .string(frame.leftRgbColor),
+                "rightRgbColor": .string(frame.rightRgbColor),
+                "durationMs": .int(frame.durationMs)
+            ])
         }
-        return try JSONSerialization.data(withJSONObject: array, options: [])
+        return JSONValue.array(array).serializedData()
     }
 
-    private static func featureToDict(_ feature: AvatarFeature) -> [String: Any] {
-        [
-            "x": feature.x,
-            "y": feature.y,
-            "rotation": feature.rotation,
-            "weight": feature.weight,
-            "size": feature.size
-        ]
+    private static func featureToValue(_ feature: AvatarFeature) -> JSONValue {
+        .object([
+            "x": .int(feature.x),
+            "y": .int(feature.y),
+            "rotation": .int(feature.rotation),
+            "weight": .int(feature.weight),
+            "size": .int(feature.size)
+        ])
     }
 
-    private static func servoToDict(_ servo: ServoTarget) -> [String: Any] {
-        [
-            "angle": servo.angle,
-            "speed": servo.speed
-        ]
+    private static func servoToValue(_ servo: ServoTarget) -> JSONValue {
+        .object([
+            "angle": .int(servo.angle),
+            "speed": .int(servo.speed)
+        ])
     }
 }

@@ -21,9 +21,8 @@ final class DanceSequenceTests: XCTestCase {
     }
     """
 
-    private func decodeObject(_ json: String) throws -> Any {
-        let data = Data(json.utf8)
-        return try JSONSerialization.jsonObject(with: data, options: [])
+    private func decodeObject(_ json: String) throws -> JSONValue {
+        try JSONParser.parse(json)
     }
 
     // MARK: - 顶层必须是数组

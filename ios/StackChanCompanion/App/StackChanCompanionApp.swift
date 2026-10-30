@@ -17,7 +17,13 @@ import SwiftUI
 struct StackChanCompanionApp: App {
 
     /// 当前主题选择（注入环境）。开发期可切换。
-    @State private var themeChoice: ThemeChoice = .light
+    ///
+    /// ⭐ 默认值 = `.paperTerracotta`（与 `EnvironmentValues.themeChoice` 的默认值一致，
+    ///    也是 `docs/research/67` 四套方案里的**方案 01**）。
+    ///    ⚠️ 2026-10-30 第一次在 macOS CI 真编时，这里写的是 `.light` ——
+    ///    而 `ThemeChoice` 只有 4 套**命名方案**（没有 light/dark 之分，
+    ///    「深浅」是方案的属性，见 `Theme.swift` 文件头）⇒ 编译不过，已订正。
+    @State private var themeChoice: ThemeChoice = .paperTerracotta
 
     var body: some Scene {
         WindowGroup {

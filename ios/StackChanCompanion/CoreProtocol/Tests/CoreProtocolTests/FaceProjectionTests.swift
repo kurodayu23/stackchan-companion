@@ -174,9 +174,19 @@ final class FaceProjectionTests: XCTestCase {
             before: FaceSemanticGuard.fingerprint(of: before),
             after: FaceSemanticGuard.fingerprint(of: after)).isEmpty)
         // 给 2 的容差 ⇒ 通过
+        // ⚠️ **两个容差是独立的**：眼睛开合差变了 2，嘴眼相对关系也会**跟着**变
+        //    （20/100 = 0.2 → 20/99 ≈ 0.20202，偏差 0.00202）。
+        //    ⇒ 只给眼睛容差时，「嘴眼相对关系」这条不变量仍会报 —— 这是**预期行为**：
+        //    风格化只改画法，嘴眼相对关系必须**单独**给容差才能放行。
         XCTAssertTrue(FaceSemanticGuard.violations(
             before: FaceSemanticGuard.fingerprint(of: before),
             after: FaceSemanticGuard.fingerprint(of: after),
-            eyeAsymmetryTolerance: 2).isEmpty)
+            eyeAsymmetryTolerance: 2,
+            mouthRatioTolerance: 0.01).isEmpty)
+        // 只给眼睛容差 ⇒ 嘴眼相对关系这条**仍报**（证明上面的通过不是因为实现放水）
+        XCTAssertEqual(FaceSemanticGuard.violations(
+            before: FaceSemanticGuard.fingerprint(of: before),
+            after: FaceSemanticGuard.fingerprint(of: after),
+            eyeAsymmetryTolerance: 2).count, 1)
     }
 }

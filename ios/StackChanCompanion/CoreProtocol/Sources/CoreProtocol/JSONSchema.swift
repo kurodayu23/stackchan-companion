@@ -1,7 +1,4 @@
 import Foundation
-#if canImport(CoreFoundation)
-import CoreFoundation
-#endif
 
 /// 本地 JSON schema 校验的错误类型。
 ///
@@ -39,16 +36,16 @@ public enum JSONSchema {
     // MARK: - 基础取值
 
     /// 顶层必须是 JSON 对象。
-    public static func requireObject(_ value: Any) throws -> [String: Any] {
-        guard let object = value as? [String: Any] else {
+    public static func requireObject(_ value: JSONValue) throws -> [String: JSONValue] {
+        guard case .object(let object) = value else {
             throw SchemaError.notAnObject(found: typeName(of: value))
         }
         return object
     }
 
     /// 顶层必须是 JSON 数组。
-    public static func requireArray(_ value: Any) throws -> [Any] {
-        guard let array = value as? [Any] else {
+    public static func requireArray(_ value: JSONValue) throws -> [JSONValue] {
+        guard case .array(let array) = value else {
             throw SchemaError.notAnArray(found: typeName(of: value))
         }
         return array
@@ -58,32 +55,31 @@ public enum JSONSchema {
     ///
     /// ⚠️ **「是不是 int」的判定**：JSON 数字带小数点即**不算 int**。
     ///    这与固件 ArduinoJson 的 `is<int>()` 判定一致（`docs/research/53` §3.1）。
-    public static func requireInt(_ container: [String: Any], key: String, path: String) throws -> Int {
+    public static func requireInt(_ container: [String: JSONValue], key: String, path: String) throws -> Int {
         guard let raw = container[key] else {
             throw SchemaError.missingKey(path: "\(path).\(key)")
         }
-        guard isIntegerJSONNumber(raw) else {
+        switch raw {
+        case .int(let value):
+            return value
+        case .double, .string, .bool, .object, .array, .null:
             throw SchemaError.notAnInt(path: "\(path).\(key)")
         }
-        guard let number = raw as? NSNumber else {
-            throw SchemaError.notAnInt(path: "\(path).\(key)")
-        }
-        return number.intValue
     }
 
     /// 取一个必填的字符串字段。
-    public static func requireString(_ container: [String: Any], key: String, path: String) throws -> String {
+    public static func requireString(_ container: [String: JSONValue], key: String, path: String) throws -> String {
         guard let raw = container[key] else {
             throw SchemaError.missingKey(path: "\(path).\(key)")
         }
-        guard let text = raw as? String else {
+        guard case .string(let text) = raw else {
             throw SchemaError.notAString(path: "\(path).\(key)")
         }
         return text
     }
 
     /// 拒绝契约之外的 key（固件静默忽略 ⇒ 这里显式报错）。
-    public static func rejectUnknownKeys(_ container: [String: Any], allowed: Set<String>, path: String) throws {
+    public static func rejectUnknownKeys(_ container: [String: JSONValue], allowed: Set<String>, path: String) throws {
         for key in container.keys where !allowed.contains(key) {
             throw SchemaError.unknownKey(path: path, key: key)
         }
@@ -93,29 +89,25 @@ public enum JSONSchema {
     ///
     /// 规则：JSON 数字**带小数点即不是 int**（与固件 ArduinoJson `is<int>()` 一致）。
     ///
-    /// ⚠️ **【运行时未验证】** —— 本机（Windows）没有 Swift 编译器，无法实跑这段。
-    ///    实现依赖一个 Foundation 行为假设：`JSONSerialization` 对 `10` 返回**整数型** NSNumber，
-    ///    对 `10.0` 返回**浮点型** NSNumber。
-    ///    该假设由单测 `testJSONSerializationPreservesIntegerTypes` 在 macOS CI 上守门，
-    ///    若 Foundation 行为变化，单测会红。
-    public static func isIntegerJSONNumber(_ value: Any) -> Bool {
-        guard let number = value as? NSNumber else { return false }
-        #if canImport(CoreFoundation)
-        // JSON 的 true/false 也是 NSNumber，必须排除
-        if CFGetTypeID(number) == CFBooleanGetTypeID() { return false }
-        if CFNumberIsFloatType(number) { return false }
-        #endif
-        return true
+    /// ⭐ **判定只依赖我们自己解析出的 `JSONValue`**（`.int` vs `.double`），
+    ///    而 `.int` / `.double` 是按**字面量**判的
+    ///    —— 与平台、Foundation 版本**完全无关**。
+    ///    ⛔ 旧实现依赖 `JSONSerialization` 返回的 NSNumber 子类型，
+    ///       那条假设 2026-10-30 在 macOS CI 真跑时被证伪（见 `JSONValue.swift` 文件头）。
+    public static func isIntegerJSONNumber(_ value: JSONValue) -> Bool {
+        if case .int = value { return true }
+        return false
     }
 
     /// 类型的可读名（错误信息用）。
-    public static func typeName(of value: Any) -> String {
+    public static func typeName(of value: JSONValue) -> String {
         switch value {
-        case is [Any]: return "array"
-        case is [String: Any]: return "object"
-        case is String: return "string"
-        case is NSNumber: return "number"
-        default: return "unknown"
+        case .array: return "array"
+        case .object: return "object"
+        case .string: return "string"
+        case .int, .double: return "number"
+        case .bool: return "boolean"
+        case .null: return "null"
         }
     }
 
@@ -129,7 +121,7 @@ public enum JSONSchema {
     /// 校验 ControlAvatar(0x03) 的 payload，并返回解析后的模型。
     ///
     /// ⭐ 出处：`docs/spec/03` §2.5.1
-    public static func validateControlAvatar(_ value: Any) throws -> AvatarModel {
+    public static func validateControlAvatar(_ value: JSONValue) throws -> AvatarModel {
         let root = try requireObject(value)
         try rejectUnknownKeys(root, allowed: avatarElementKeys, path: "avatar")
         return AvatarModel(
@@ -151,8 +143,15 @@ public enum JSONSchema {
     ///    ⇒ 固件在 0x14 下会"丢掉那个非 int 的、保留另一个"。
     ///    本方法对**两条通道都判成对**，属于**故意比固件严**（见文件头的说明）：
     ///    与固件不一致的帧我们宁可拒收，也不要让它"一半生效"。
-    public static func validateFeature(_ root: [String: Any], key: String) throws -> AvatarFeature {
-        let path = "avatar.\(key)"
+    ///
+    /// - Parameter pathPrefix: 错误路径的前缀。
+    ///    0x03 ⇒ `"avatar"`；0x14 ⇒ `"sequence[0]"`（**必须可配置**，
+    ///    否则 0x14 的错误路径会指向不存在的 `avatar.leftEye`，
+    ///    调用方根本定位不到是第几帧出的问题）。
+    public static func validateFeature(_ root: [String: JSONValue],
+                                       key: String,
+                                       pathPrefix: String = "avatar") throws -> AvatarFeature {
+        let path = "\(pathPrefix).\(key)"
         guard let raw = root[key] else {
             throw SchemaError.missingKey(path: path)
         }
@@ -199,7 +198,7 @@ public enum JSONSchema {
     /// 校验 ControlMotion(0x04) 的 payload。
     ///
     /// ⭐ 出处：`docs/spec/03` §2.4；限位出处同 §2.4（`hal_servo.cpp` `servo_init()`）。
-    public static func validateControlMotion(_ value: Any) throws -> MotionModel {
+    public static func validateControlMotion(_ value: JSONValue) throws -> MotionModel {
         let root = try requireObject(value)
         try rejectUnknownKeys(root, allowed: motionServoKeys, path: "motion")
         let yaw = try validateServo(root, key: "yawServo", isValid: ServoLimit.isValidYaw)
@@ -208,10 +207,13 @@ public enum JSONSchema {
     }
 
     /// 校验单个舵机目标。
-    public static func validateServo(_ root: [String: Any],
+    ///
+    /// - Parameter pathPrefix: 错误路径前缀（0x04 ⇒ `"motion"`；0x14 ⇒ `"sequence[0]"`）。
+    public static func validateServo(_ root: [String: JSONValue],
                                      key: String,
-                                     isValid: (Int) -> Bool) throws -> ServoTarget {
-        let path = "motion.\(key)"
+                                     isValid: (Int) -> Bool,
+                                     pathPrefix: String = "motion") throws -> ServoTarget {
+        let path = "\(pathPrefix).\(key)"
         guard let raw = root[key] else {
             throw SchemaError.missingKey(path: path)
         }

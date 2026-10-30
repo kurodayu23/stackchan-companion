@@ -3,6 +3,9 @@
 > 一个**开源、自研**的桌面 AI 陪伴机器人软件栈 + 原生 iOS App。
 > 硬件用官方成品 **M5Stack StackChan**，**软件、交互、账号、AI 供应商全部自研**。
 
+> 🔗 **公开仓**：<https://github.com/kurodayu23/stackchan-companion>（MIT · 匿名可读）
+> 两条 CI 线：**ubuntu**（47 项门禁 + 后端 102 个测试）· **macOS**（`swift test` 真跑单测 + `xcodebuild` 真编译）
+
 <p align="center">
   <img src="assets/screenshots/schemes.gif" width="404" alt="4 套视觉方案的 iOS 原型真实渲染（循环）">
 </p>

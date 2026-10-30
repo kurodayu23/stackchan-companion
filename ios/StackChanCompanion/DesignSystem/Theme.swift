@@ -87,6 +87,32 @@ extension ThemeChoice {
     public var theme: Theme { PaletteTheme(palette) }
 }
 
+/// 对比度偏好（封装「系统增强对比度」偏好）。
+///
+/// ⭐ **为什么不用 `ColorSchemeContrast` 直接当字段类型**：
+///    `ColorSchemeContrast` 是 SwiftUI 的类型，**没有 `Hashable` / `Sendable` 之外的可测语义**，
+///    而且它只在 iOS 17+ 存在、不能进 `ResolvedTheme` 的跨平台单测。
+///    ⇒ 这里用**自己的值类型**承载，映射关系见 ``swiftUIColorSchemeContrast``。
+///
+/// ⛔ **目前没有任何视觉分支消费它** —— 增强对比度下要不要加深描边、
+///    要不要提高前景/背景对比，属于**视觉层待拍板项**
+///    （`docs/research/67-四套视觉方案token提取与对比度复核.md`）。
+///    未拍板前**只保留类型，不实现分支** —— 避免"看起来支持了其实没做"。
+public enum AccessibilityContrast: String, CaseIterable, Sendable {
+    /// 系统未开启增强对比度。
+    case standard
+    /// 系统开启了增强对比度。
+    case increased
+
+    /// 映射到 SwiftUI 的 `ColorSchemeContrast`。
+    public var swiftUIColorSchemeContrast: ColorSchemeContrast {
+        switch self {
+        case .standard:  return .standard
+        case .increased: return .increased
+        }
+    }
+}
+
 /// 已解析主题（注入环境，供视图读取）。
 public struct ResolvedTheme: Sendable {
     /// 当前方案选择。

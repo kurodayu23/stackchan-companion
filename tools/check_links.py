@@ -234,27 +234,38 @@ def _strip_line_suffix(token: str) -> str:
 
 
 def _exists(base: str, candidate: str) -> bool:
-    """在 ``base`` 下解析候选路径（大小写不敏感，Windows / GitHub 语义一致）。"""
+    """在 ``base`` 下解析候选路径（**大小写不敏感**，Windows / Linux 语义一致）。
+
+    ⚠️ 2026-10-30 第一次在 GitHub Actions（ubuntu）真跑时抓到：
+       旧实现只用 ``os.path.exists``，而 **Windows 文件系统本身大小写不敏感**
+       ⇒ 本机永远 PASS；**Linux 敏感** ⇒ 同一条用例必挂（self-test 29/30）。
+       ⇒ 现在逐段做「不区分大小写」的真实名解析，**两端结论一致**。
+
+    ⚠️ 命中后必须把 ``cur`` 换成**真实名**再往下走：
+       否则下一段会拼成 ``TOOLS/REAL.PY`` 这种大小写混用的路径，
+       在 Linux 上根本不存在 ⇒ 依旧解析失败。
+    """
     cand = _norm(candidate)
     if not cand:
         return False
     parts = [p for p in cand.split("/") if p and p != "."]
     cur = base
-    for idx, part in enumerate(parts):
-        cur = os.path.join(cur, part)
-        if os.path.exists(cur):
+    for part in parts:
+        exact = os.path.join(cur, part)
+        if os.path.exists(exact):
+            cur = exact
             continue
-        parent = os.path.dirname(cur) if idx < len(parts) - 1 else cur
-        if not os.path.isdir(parent):
+        if not os.path.isdir(cur):
             return False
         try:
-            names = os.listdir(parent)
+            names = os.listdir(cur)
         except OSError:
             return False
-        if part not in names:
-            lowered = part.lower()
-            if not any(n.lower() == lowered for n in names):
-                return False
+        lowered = part.lower()
+        real = next((n for n in names if n.lower() == lowered), None)
+        if real is None:
+            return False
+        cur = os.path.join(cur, real)
     return True
 
 

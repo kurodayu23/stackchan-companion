@@ -4,6 +4,10 @@
 > 结论：**新版手机 Web 遥控台已完整可用**（官方 3D 模型 + 摇杆 + 聊天 + 状态），
 > 设备屏遥控反馈态模拟器已交付；真机 Wi-Fi 联调差一步需要你在场操作。
 
+> 📌 **本仓已公开发布**：<https://github.com/kurodayu23/stackchan-companion>（MIT · 匿名可读）
+> 本文件只记**手机端交付状态**；仓库整体状态看 [`README.md`](README.md) 与
+> [`docs/research/99-首次公开发布与CI首跑.md`](docs/research/99-首次公开发布与CI首跑.md)。
+
 ---
 
 ## 一、做了什么（一句话）

@@ -120,8 +120,15 @@ final class AvatarModelTests: XCTestCase {
         XCTAssertEqual(happy.weight, 72)
         XCTAssertEqual(happy.rotation, 1550)
 
+        // ⚠️ 右眼是**等效正角 2050**（3600 − 1550），不是固件的视觉值 −1550。
+        //    理由：固件 `Element::setRotation` 把存储值钳到 0…3600，
+        //    负值读回是 0（`docs/spec/06-表情参数模型.md` §4.3），
+        //    ⇒ 下发必须用等效正角；`eyeFeature` 的文档也写明「rotation 用**下发值**」。
+        //    ⭐ 2026-10-30 第一次在 macOS CI 真跑时，这条断言写的是 −1550，
+        //    与同一函数里左眼的 1550（本来就是下发值）自相矛盾 ⇒ 这里按**下发值**订正。
         let right = Mood.happy.eyeFeature(side: .rightEye)
-        XCTAssertEqual(right.rotation, -1550)
+        XCTAssertEqual(right.rotation, 2050)
+        XCTAssertEqual(Mood.happy.rightEyeRotation, -1550, "固件视觉值本身仍带符号的 −1550")
     }
 
     // MARK: - x/y 单位换算（系数 6.25）
@@ -172,26 +179,45 @@ final class AvatarModelTests: XCTestCase {
 
     // MARK: - JSON 整数判定
 
-    func testJSONSerializationPreservesIntegerTypes() {
-        // ⚠️ 这条测试是"运行时未验证"假设的守门员：
-        //    我们依赖 Foundation 的 JSONSerialization 对 `10` 返回整数型 NSNumber、
-        //    对 `10.0` 返回浮点型 NSNumber。若 Foundation 行为变化，本测试会红。
-        let integer = try? JSONSerialization.jsonObject(with: Data("10".utf8))
-        XCTAssertTrue(JSONSchema.isIntegerJSONNumber(integer ?? 0))
+    func testJSONParserDistinguishesIntegerFromFractionalLiteral() throws {
+        // ⭐ 这条测试守的是**我们自己的解析器**，不是 Foundation 的行为。
+        //    旧版本依赖「JSONSerialization 对 `10` 返回整数型 NSNumber、对 `10.0` 返回浮点型」
+        //    —— 那条假设在 2026-10-30 第一次 macOS CI 真跑时被证伪
+        //    （`JSONSerialization` 连顶层片段 `"10"` 都解析不了，抛 NSCocoaError 3840）。
+        //    ⇒ 现在 int / double 由**字面量**判定，与平台、Foundation 版本无关。
+        let integer = try JSONParser.parse("10")
+        XCTAssertTrue(JSONSchema.isIntegerJSONNumber(integer))
 
-        let double = try? JSONSerialization.jsonObject(with: Data("10.0".utf8))
-        XCTAssertFalse(JSONSchema.isIntegerJSONNumber(double ?? 0))
+        let fractional = try JSONParser.parse("10.0")
+        XCTAssertFalse(JSONSchema.isIntegerJSONNumber(fractional))
+
+        let exponential = try JSONParser.parse("1e2")
+        XCTAssertFalse(JSONSchema.isIntegerJSONNumber(exponential),
+                       "指数写法也算非整数（固件 is<int>() 同样判 false）")
     }
 
-    func testIntegerJSONNumberRejectsNonNumbers() {
-        XCTAssertFalse(JSONSchema.isIntegerJSONNumber("10"))
-        XCTAssertFalse(JSONSchema.isIntegerJSONNumber([1, 2]))
-        XCTAssertFalse(JSONSchema.isIntegerJSONNumber(["a": 1]))
+    func testIntegerJSONNumberRejectsNonNumbers() throws {
+        XCTAssertFalse(JSONSchema.isIntegerJSONNumber(try JSONParser.parse("\"10\"")))
+        XCTAssertFalse(JSONSchema.isIntegerJSONNumber(try JSONParser.parse("[1, 2]")))
+        XCTAssertFalse(JSONSchema.isIntegerJSONNumber(try JSONParser.parse("{\"a\": 1}")))
+        XCTAssertFalse(JSONSchema.isIntegerJSONNumber(try JSONParser.parse("true")))
     }
 
     func testIntegerJSONNumberRejectsFractionalValue() throws {
-        let value = try JSONSerialization.jsonObject(with: Data("10.5".utf8))
+        let value = try JSONParser.parse("10.5")
         XCTAssertFalse(JSONSchema.isIntegerJSONNumber(value))
+    }
+
+    func testJSONParserRejectsTopLevelFragmentFromFoundation() throws {
+        // ⭐ 旧实现用 `JSONSerialization` 时，顶层片段（`10` / `"x"` / `true`）
+        //    会抛 Foundation 的 NSCocoaError 3840 ⇒ 我们的 `SchemaError` 根本轮不到。
+        //    ⇒ 现在顶层片段能正常解析成值，再由 schema 层**用我们自己的错误类型**拒收。
+        let number = try JSONParser.parse("42")
+        XCTAssertThrowsError(try DanceSequence.decode(number)) { error in
+            guard case .notAnArray = (error as? SchemaError) else {
+                return XCTFail("应当抛 notAnArray，实际 \(error)")
+            }
+        }
     }
 
     // MARK: - ControlAvatar 校验
@@ -202,7 +228,7 @@ final class AvatarModelTests: XCTestCase {
           "rightEye": { "x": 13, "y": -1, "rotation": 1550, "weight": 72,  "size": 0 },
           "mouth":    { "x": 0,  "y": 0, "rotation": 0,    "weight": 30,  "size": 0 } }
         """
-        let value = try JSONSerialization.jsonObject(with: Data(json.utf8))
+        let value = try JSONParser.parse(json)
         let model = try JSONSchema.validateControlAvatar(value)
 
         XCTAssertEqual(model.leftEye.weight, 100)
@@ -218,7 +244,7 @@ final class AvatarModelTests: XCTestCase {
           "rightEye": { "x": 0, "y": 0, "rotation": 0, "weight": 100, "size": 0 },
           "mouth":    { "x": 0, "y": 0, "rotation": 0, "weight": 30,  "size": 0 } }
         """
-        let value = try JSONSerialization.jsonObject(with: Data(json.utf8))
+        let value = try JSONParser.parse(json)
         XCTAssertThrowsError(try JSONSchema.validateControlAvatar(value)) { error in
             XCTAssertEqual(error as? SchemaError, .notAnInt(path: "avatar.leftEye.x"))
         }
@@ -229,7 +255,7 @@ final class AvatarModelTests: XCTestCase {
         { "leftEye":  { "x": 0, "y": 0, "rotation": 0, "weight": 100, "size": 0 },
           "mouth":    { "x": 0, "y": 0, "rotation": 0, "weight": 30,  "size": 0 } }
         """
-        let value = try JSONSerialization.jsonObject(with: Data(json.utf8))
+        let value = try JSONParser.parse(json)
         XCTAssertThrowsError(try JSONSchema.validateControlAvatar(value)) { error in
             XCTAssertEqual(error as? SchemaError, .missingKey(path: "avatar.rightEye"))
         }
@@ -240,7 +266,7 @@ final class AvatarModelTests: XCTestCase {
           "rightEye": { "x": 0, "y": 0, "rotation": 0, "weight": 100, "size": 0 },
           "mouth":    { "x": 0, "y": 0, "rotation": 0, "weight": 30,  "size": 0 } }
         """
-        let value = try JSONSerialization.jsonObject(with: Data(json.utf8))
+        let value = try JSONParser.parse(json)
         XCTAssertThrowsError(try JSONSchema.validateControlAvatar(value)) { error in
             guard case .outOfRange(let path, _, _) = (error as? SchemaError) else {
                 return XCTFail("应当抛 outOfRange，实际 \(error)")
@@ -258,7 +284,7 @@ final class AvatarModelTests: XCTestCase {
           "rightEye": { "x": 0, "y": 0, "rotation": 0, "weight": 100, "size": 0 },
           "mouth":    { "x": 0, "y": 0, "rotation": 0, "weight": 30,  "size": 0 } }
         """
-        let value = try JSONSerialization.jsonObject(with: Data(json.utf8))
+        let value = try JSONParser.parse(json)
         XCTAssertThrowsError(try JSONSchema.validateControlAvatar(value)) { error in
             guard case .outOfRange(let path, _, _) = (error as? SchemaError) else {
                 return XCTFail("应当抛 outOfRange，实际 \(error)")
@@ -272,7 +298,7 @@ final class AvatarModelTests: XCTestCase {
         { "yawServo":   { "angle": -60, "speed": 500 },
           "pitchServo": { "angle": 220, "speed": 500 } }
         """
-        let value = try JSONSerialization.jsonObject(with: Data(json.utf8))
+        let value = try JSONParser.parse(json)
         let model = try JSONSchema.validateControlMotion(value)
         XCTAssertEqual(model.yawServo.angle, -60)
         XCTAssertEqual(model.pitchServo.angle, 220)
@@ -284,7 +310,7 @@ final class AvatarModelTests: XCTestCase {
         { "yawServo":   { "angle": 0, "speed": 500 },
           "pitchServo": { "angle": 900, "speed": 500 } }
         """
-        let value = try JSONSerialization.jsonObject(with: Data(json.utf8))
+        let value = try JSONParser.parse(json)
         XCTAssertThrowsError(try JSONSchema.validateControlMotion(value)) { error in
             guard case .outOfRange(let path, _, _) = (error as? SchemaError) else {
                 return XCTFail("应当抛 outOfRange，实际 \(error)")
