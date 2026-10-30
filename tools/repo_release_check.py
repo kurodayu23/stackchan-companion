@@ -210,6 +210,44 @@ QUOTE_SPAN_RES = (
     re.compile(r"\"[^\"\n]*\""),
 )
 
+# 行内代码跨度：`` `[x](y)` `` 里的方括号在 markdown 里**渲染成代码**，不是链接
+# ⇒ 同样不做仓库内存在性检查。
+#
+# ⚠️ 2026-10-30 在 GitHub Actions（ubuntu）真跑时抓到：
+#    `docs/research/18-*.md` 里有 `` `... [Kokoro](...), [MiniMax](https://…), [Mistral](...) ...` ``
+#    —— 这是**引用上游 README 原文的片段**，`...` 是省略号占位，根本不是链接。
+#    ⚠️ 但在 **Windows** 上 `os.path.exists("docs\\research\\...")` 返回 **True**
+#    （Win32 会**剥掉路径分量末尾的点** ⇒ `...` 被当成空分量 ⇒ 解析成 `docs\\research`）
+#    ⇒ **本机永远 PASS、CI 永远 FAIL** —— 又一处 Windows 独占的假阴性。
+CODE_SPAN_RE = re.compile(r"(`+)[^`\n]*?\1")
+
+
+def _is_ellipsis_placeholder(target: str) -> bool:
+    """链接目标是「省略号占位」⇒ 不是真链接，不判坏链。
+
+    ⚠️ 只认**整段都是点**的分量（`...` / `....`）——
+       正常文件名（`a.md` / `v1.2`）不受影响。
+    """
+    for part in re.split(r"[\\/]+", target):
+        if len(part) >= 3 and set(part) == {"."}:
+            return True
+    return False
+
+
+def _has_dotted_component(target: str) -> bool:
+    """目标里是否有「末尾带点」的分量（`.` / `..` 除外）。
+
+    ⚠️ **Windows 会剥掉路径分量末尾的点**（`foo.` ≡ `foo`），
+       而 Linux 不会 ⇒ `os.path.exists` 的结论在两端可能相反。
+       ⇒ 这类目标**不采信** `os.path.exists` 的结果，避免平台差异掩盖真坏链。
+    """
+    for part in re.split(r"[\\/]+", target):
+        if part in ("", ".", ".."):
+            continue
+        if part.endswith("."):
+            return True
+    return False
+
 # 扫描器自身文件名：自检夹具里故意写了假密钥，扫描时跳过自己。
 SELF_FILENAME = "repo_release_check.py"
 
@@ -564,9 +602,11 @@ class RepoChecker:
             for rx in QUOTE_SPAN_RES:
                 for m in rx.finditer(line):
                     spans.append((m.start(), m.end()))
+            for m in CODE_SPAN_RE.finditer(line):
+                spans.append((m.start(), m.end()))
             for m in MD_INLINE_LINK_RE.finditer(line):
                 if any(st <= m.start() < en for st, en in spans):
-                    continue  # 引号内的外部引用，不查仓库内存在性
+                    continue  # 引号内 / 行内代码里的方括号不是链接
                 self._check_one_link(rel, path, idx + 1, m.group(1), in_docs)
             mdef = MD_REF_DEF_RE.match(line)
             if mdef:
@@ -577,8 +617,11 @@ class RepoChecker:
         t = self._link_target(raw)
         if not t:
             return
+        if _is_ellipsis_placeholder(t):
+            # 省略号占位（引用上游 README 原文时的 `...`）⇒ 不是真链接
+            return
         resolved = os.path.normpath(os.path.join(str(path.parent), t))
-        if os.path.exists(resolved):
+        if os.path.exists(resolved) and not _has_dotted_component(t):
             return
         suffix = Path(t).suffix.lower()
         if in_docs and suffix in ASSET_EXTS:
@@ -1041,7 +1084,11 @@ def _build_fixture_clean(base: Path) -> Path:
                  "# Clean fixture\n\n"
                  "本项目为**非官方第三方项目**，与 M5Stack Technology CO LTD 无隶属关系；\n"
                  '"StackChan" 是 M5Stack Technology CO LTD 的**商标**，本项目**未获其背书**。\n\n'
-                 "许可见 [LICENSE](LICENSE) 与 [NOTICE](NOTICE)。\n")
+                 "许可见 [LICENSE](LICENSE) 与 [NOTICE](NOTICE)。\n\n"
+                 # ⚠️ 行内代码里的方括号**不是链接**；`...` 是省略号占位。
+                 #    放「干净夹具」里 ⇒ 扫描器一回归（不再跳过代码跨度 / 误判占位）就变红。
+                 "引用上游 README 原文：`... [Kokoro](...), [MiniMax](https://example.com/x), "
+                 "[Mistral](...) ...` —— 省略号是占位，不是链接。\n")
     _write_bytes(root / "LICENSE",
                  "MIT License\n\n"
                  "Copyright (c) 2026 StackChan Companion Contributors\n"
