@@ -119,7 +119,7 @@ Ollama 的 OpenAI 兼容层**列了** `/v1/audio/transcriptions` 端点，
 | 后端测试 | ✅ **130 个全绿**（原 102 + 新增 28 个本地 provider 测试） |
 | 全量门禁 | ✅ **49/49 PASS**（47 → 49：新增门禁本体 + 其自检） |
 | U+FFFD | ✅ **0** |
-| CI（ubuntu） | ⏳ 待复跑（见 §六） |
+| CI（ubuntu） | ✅ **5/5 全绿** · run `41367098898`（代码 commit `294da4c2`）· run `41367628217`（文档修复 commit `1dca4bca`）—— 作业：Docs & release gates / iOS static checks / CI definition checks / Tooling self-tests / Server tests |
 
 ---
 
