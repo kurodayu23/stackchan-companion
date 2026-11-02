@@ -4,7 +4,7 @@
 > 硬件用官方成品 **M5Stack StackChan**，**软件、交互、账号、AI 供应商全部自研**。
 
 > 🔗 **公开仓**：<https://github.com/kurodayu23/stackchan-companion>（MIT · 匿名可读）
-> 两条 CI 线：**ubuntu**（49 项门禁 + 后端 130 个测试）· **macOS**（`swift test` 真跑单测 + `xcodebuild` 真编译）
+> 两条 CI 线：**ubuntu**（51 项门禁 + 后端 130 个测试）· **macOS**（`swift test` 真跑单测 + `xcodebuild` 真编译）
 
 <p align="center">
   <img src="assets/screenshots/schemes.gif" width="404" alt="4 套视觉方案的 iOS 原型真实渲染（循环）">
@@ -106,7 +106,7 @@ py -3.12 tools/demo_offline.py --text "今天真开心啊！"
 保活调度器、关键帧编译器、插值器。竞品要么把 AI 放云端只传文字/音频，
 要么在设备上跑小模型但没有身体表达。
 
-**③ 全部结论带出处。** `docs/research/` 里 101 份取证档案（约 5.6 MB），
+**③ 全部结论带出处。** `docs/research/` 里 102 份取证档案（约 5.6 MB），
 每条结论都能追到 `file:line` 或实测记录；被推翻的假设也留着，并写明为什么错。
 
 **④ ⭐ 我们测出了一个别人不会写进 README 的事实：TTS 的输出不可复现。**
@@ -152,6 +152,7 @@ LLM p50 **2019 ms**、TTS p50 **1098 ms**、**我们的关键帧编译器 p50 10
 - ✅ 后端基座（`server/`，MiniMax provider + 人格 + 记忆 + 离线闭环，**130 项测试**）
 - ✅ iOS 协议包 + 完整 App 工程（`ios/`，44 个 Swift 文件）
 - ✅ iOS 原生感判定器 + 官方规范事实层（`prototype/ios/check_ios.py`、`docs/spec/08`）
+- ✅ **韵律→身体 联合标定**（`tools/calibrate_energy_gain.py`；情绪基线 SNR **0.19 → 0.62**、能量动态 0.242 → 0.960 ⇒ 把「韵律调制是净负贡献」这个护城河短板修掉，并**公开订正**了旧归因；新增 PR-14 + 门禁第 50/51 项 + 配置漂移检测）
 - ✅ **本地推理 provider**（`server/providers/local.py`；**构造时拒绝非回环地址** + OpenAI 兼容对话 + 自解 WAV 取真实采样率；6 条判据 + 7 项变异自检 ⇒ 「个人数据永不入库」从文案变成可机检事实）
 
 **真机取证**（只读，未写 flash）：
@@ -193,7 +194,7 @@ StackChanCompanion/
 │   │                       04 护城河 · 05 技术选型 · 06 表情参数模型 · 07 待拍板清单
 │   │                       08 iOS 官方规范事实层（带出处等级）
 │   │                       09 施工顺序与决策依赖图（先做什么 / 谁卡谁）
-│   ├── research/           ⭐ 取证档案（101 份 / 约 5.6 MB，全部为实测取证）
+│   ├── research/           ⭐ 取证档案（102 份 / 约 5.6 MB，全部为实测取证）
 │   ├── requirements/       需求与功能清单（待建）
 │   ├── design/             设计规范：令牌 / 组件 / 图标（待建）
 │   ├── architecture/       架构与数据流（待建）

@@ -55,6 +55,8 @@ check_citations	python tools/check_citations.py --root .
 check_citations/selftest	python tools/check_citations.py --self-test
 check_prosody	python tools/check_prosody.py --root .
 check_prosody/selftest	python tools/check_prosody.py --self-test
+calibrate_energy_gain	python tools/calibrate_energy_gain.py --root .
+calibrate_energy_gain/selftest	python tools/calibrate_energy_gain.py --self-test
 device_screen_sim/selftest	python tools/device_screen_sim.py --self-test
 check_mobile_app	python tools/check_mobile_app.py --root .
 check_mobile_app/selftest	python tools/check_mobile_app.py --self-test

@@ -29,9 +29,10 @@
 | PR-08 | `expressiveness` 必须单调 | pitch_span / yaw_span / mouth_mean 单调不减 |
 | PR-09 | 单帧不得超 WS 上限 | ≤ 262144 B，且一个 WS 帧至少装 4 帧 |
 | PR-10 | 输出不得越界 | pitch / yaw / weight 全在硬限内 |
-| PR-11 | 情绪基线 SNR（**WARN**） | 基线最小间隔 ÷ 韵律扰动 ≥ 0.50（实测 0.19 ⇒ 需重新标定 `energyEyeGain`） |
-| PR-12 | 真实 TTS 语料上「跨文本留一」可辨识度 | ≥ 50%（实测 61.1%） |
-| PR-13 | 真实 TTS 上能量通道必须还活着 | 浊音帧 e_norm 跨度 ≥ 0.10（实测 0.242） |
+| PR-11 | 情绪基线 SNR | 基线最小间隔 ÷ 韵律扰动 ≥ 0.50（标定前 0.19 ⇒ **已重标定**；现 0.62） |
+| PR-12 | 真实 TTS 语料上「跨文本留一」可辨识度 | ≥ 50%（实测 55.6%） |
+| PR-13 | 真实 TTS 上能量通道必须还活着 | 浊音帧 e_norm 跨度 ≥ 0.60（口径改为**浊音定标**；实测 0.69） |
+| PR-14 | 停顿里嘴不得彻底塌成 0 | 真实语料上嘴 weight 最小值 ≥ 3（实测 5）—— 绝对归零会把情绪身份抹掉 |
 
 ⚠️ 本门禁测的是**输出空间的可分性**，**不等于**「人能认出」—— 后者需要主观评测。
    判据的适用范围写在这里，别把它当成人因结论。
@@ -175,6 +176,7 @@ def _features(kfs, info):
         "eye_min": float(eye.min()),
         "mouth_mean": float(mouth.mean()),
         "mouth_max": float(mouth.max()),
+        "mouth_min": float(mouth.min()),
         "nod_max": float(max(nod)) if nod else 0.0,
     }
 
@@ -428,10 +430,13 @@ def check_bandwidth(shim, P, findings, stats):
 REAL_CORPUS_DIRNAME = os.path.join("assets", "prosody-corpus")
 #: PR-12 跨文本留一可辨识度下限（实测 61.1%）
 REAL_CV_MIN = 0.50
-#: PR-13 能量通道活性下限：浊音帧 e_norm 的 p90−p10（实测 0.242）
-REAL_ENERGY_SPAN_MIN = 0.10
-#: PR-11 情绪基线 SNR 的告警阈值（实测 0.19）
-REAL_SNR_WARN = 0.50
+#: PR-13 能量通道活性下限：浊音帧 e_norm 的 p90−p10
+#: （旧口径实测 0.242 ⇒ 太宽松；改用**浊音定标**后实测 0.69）
+REAL_ENERGY_SPAN_MIN = 0.60
+#: PR-11 情绪基线 SNR 阈值（标定前实测 0.19 ⇒ 判为 WARN；重标定后 0.62 ⇒ 升为 FAIL）
+REAL_SNR_MIN = 0.50
+#: PR-14 嘴 weight 的全局下限：停顿时嘴按基线比例闭合（0.35 × 最小基线 14 ≈ 5）
+REAL_MOUTH_FLOOR_MIN = 3
 
 
 def load_real_corpus(repo_root):
@@ -479,14 +484,16 @@ def check_real_corpus(shim, P, repo_root, findings, stats, label_override=None):
         out_t = np.arange(len(kfs)) / P.OUT_FPS
         env_i = np.interp(out_t, track["times"], env)
         voiced = np.interp(out_t, track["times"], track["voiced"].astype(float)) > 0.5
-        e_ref = float(np.percentile(env, 90))
-        e_min = float(np.percentile(env, 20))
+        # ⚠️ 必须用**生产模块的定标口径**（docs/research/102）：
+        #    门禁自己另算一套 ⇒ 判据与被测代码口径不一致 ⇒ 测的不是线上行为。
+        e_ref, e_min = P._energy_reference(track)
         en = np.clip((env_i - e_min) / max(e_ref - e_min, 1.0), 0.0, 1.0)
         span = 0.0
         if voiced.any():
             span = float(np.percentile(en[voiced], 90) - np.percentile(en[voiced], 10))
         samples.append({"id": it["id"], "emo": emo, "txt": it["txt"],
-                        "f": _vec(fv), "en_span": span, "mouth": fv["mouth_mean"]})
+                        "f": _vec(fv), "en_span": span, "mouth": fv["mouth_mean"],
+                        "mouth_min": fv["mouth_min"]})
 
     emos = sorted({s["emo"] for s in samples})
     txts = sorted({s["txt"] for s in samples})
@@ -544,6 +551,16 @@ def check_real_corpus(shim, P, repo_root, findings, stats, label_override=None):
             "真实 TTS 上能量通道的动态跨度 %.3f < %.2f ⇒ 能量几乎不驱动嘴/眼/灯"
             % (med_span, REAL_ENERGY_SPAN_MIN)))
 
+    # ── PR-14：嘴在停顿里不得彻底塌成 0（情绪身份必须保留） ──
+    mouth_min_all = min((s["mouth_min"] for s in samples), default=0.0)
+    stats["real_mouth_floor"] = round(mouth_min_all, 2)
+    if mouth_min_all < REAL_MOUTH_FLOOR_MIN:
+        findings.append(Finding(
+            "PR-14", "FAIL", "assets/prosody-corpus",
+            "真实语料上嘴 weight 最小值 %.1f < %.1f ⇒ 停顿时嘴被绝对归零，"
+            "情绪身份在静音段被抹掉（docs/research/102）"
+            % (mouth_min_all, REAL_MOUTH_FLOOR_MIN)))
+
     # ── PR-11：情绪基线 SNR（能量通道是否在冲掉情绪区分） ──
     sil = np.zeros(16000)
     base = {}
@@ -568,12 +585,12 @@ def check_real_corpus(shim, P, repo_root, findings, stats, label_override=None):
     stats["real_base_min_gap"] = round(min_gap, 3)
     stats["real_within_max"] = round(max_within, 3)
     stats["real_snr"] = round(snr, 4)
-    if snr < REAL_SNR_WARN:
+    if snr < REAL_SNR_MIN:
         findings.append(Finding(
-            "PR-11", "WARN", "assets/prosody-corpus",
+            "PR-11", "FAIL", "assets/prosody-corpus",
             "情绪基线 SNR = %.2f（基线最小间隔 %.1f ÷ 韵律扰动 %.1f）< %.2f "
-            "⇒ 能量→嘴的增益可能在冲掉情绪区分 ⇒ 需要重新标定 `energyEyeGain`"
-            % (snr, min_gap, max_within, REAL_SNR_WARN)))
+            "⇒ 韵律扰动大于情绪间隔 ⇒ 情绪会被冲掉（docs/research/102）"
+            % (snr, min_gap, max_within, REAL_SNR_MIN)))
     return findings
 
 
@@ -718,6 +735,33 @@ def run_self_test(repo_root=".") -> int:
     else:
         print("  SKIP  真实语料不在（PR-11/12/13 未参与自检）")
 
+    # ── 阴性 6：停顿时嘴被绝对归零 ⇒ PR-14 必须报，PR-11 也必须报 ──
+    old_ratio = getattr(P, "MOUTH_PAUSE_CLOSE_RATIO", 0.0)
+    P.MOUTH_PAUSE_CLOSE_RATIO = 0.0
+    try:
+        f, st = scan(repo_root, Shim(P))
+    finally:
+        P.MOUTH_PAUSE_CLOSE_RATIO = old_ratio
+    check("停顿绝对归零被 PR-14 抓到",
+          any(x.code == "PR-14" for x in f), str([(x.code, x.msg) for x in f]))
+    check("停顿绝对归零后 SNR 跌破阈值",
+          st.get("real_snr", 9) < 0.50, "real_snr=%s" % st.get("real_snr"))
+
+    # ── 阴性 7：6 个嘴基线压回旧值（最小间隔 2.0）⇒ PR-11 必须报 ──
+    old_base = {k: P.EMOTION_BASELINE[k] for k in P.EMOTION_BASELINE
+                if k.endswith("_mouthWeight")}
+    old_values = {"Sleepy": 18.0, "Sad": 20.0, "Angry": 22.0,
+                  "Doubt": 26.0, "Neutral": 30.0, "Happy": 52.0}
+    for e, v in old_values.items():
+        P.EMOTION_BASELINE["%s_mouthWeight" % e] = v
+    try:
+        f, st = scan(repo_root, Shim(P))
+    finally:
+        for k, v in old_base.items():
+            P.EMOTION_BASELINE[k] = v
+    check("基线间隔塌回 2.0 后 PR-11 报错",
+          any(x.code == "PR-11" for x in f), str([(x.code, x.msg) for x in f]))
+
     print("=" * 68)
     print("[self-test] 通过 %d / %d" % (passed, passed + failed))
     return 0 if failed == 0 else 1
@@ -751,7 +795,8 @@ def main(argv=None) -> int:
                   "audit_warnings", "param_count", "cv_mean", "cv_worst",
                   "drowning_ratio", "frame_json_bytes", "bytes_per_sec", "frames_per_ws",
                   "real_corpus_n", "real_cv_mean", "real_energy_span",
-                  "real_base_min_gap", "real_within_max", "real_snr"):
+                  "real_base_min_gap", "real_within_max", "real_snr",
+                  "real_mouth_floor"):
             if k in stats:
                 print("  %-22s %s" % (k, stats[k]))
     print("-" * 70)

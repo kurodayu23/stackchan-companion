@@ -175,13 +175,17 @@ DEVICE_CONSTANTS = {
 #    下面的眼基线**直接取固件官方情绪表**（eyes.cpp:103-122），不自造
 #    嘴相反：weight 0 = 闭嘴（细线 90x6, r=0），100 = 张嘴（大椭圆 60x50, r=16）
 #    ⚠️ 固件**没有嘴部情绪表**（eyes.cpp 有、mouth.cpp 没有）⇒ 下面 6 个嘴基线是自设计值
+# ⭐ **嘴基线按真实语料重新标定**（docs/research/102，2026-11-02）：
+#   旧值 18/20/22/26/30/52 的**最小间隔只有 2.0**（Sad 20 vs Angry 22）
+#   ⇒ 这三种情绪的嘴几乎同脸，违背 spec/06 §5.2 条件 1「6 种情绪两两可区分」；
+#   新值 **14/20/26/32/38/52**（最小间隔 6，两端量级不变）⇒ 情绪基线 SNR 0.19 → 0.62。
 EMOTION_BASELINE: Dict[str, float] = {
-    "Neutral_eyeWeight": 100.0, "Neutral_mouthWeight": 30.0, "Neutral_pitch": 76.0,
+    "Neutral_eyeWeight": 100.0, "Neutral_mouthWeight": 38.0, "Neutral_pitch": 76.0,
     "Happy_eyeWeight": 72.0,    "Happy_mouthWeight": 52.0,   "Happy_pitch": 80.0,
-    "Angry_eyeWeight": 70.0,    "Angry_mouthWeight": 22.0,   "Angry_pitch": 70.0,
+    "Angry_eyeWeight": 70.0,    "Angry_mouthWeight": 26.0,   "Angry_pitch": 70.0,
     "Sad_eyeWeight": 70.0,      "Sad_mouthWeight": 20.0,     "Sad_pitch": 58.0,
-    "Doubt_eyeWeight": 75.0,    "Doubt_mouthWeight": 26.0,   "Doubt_pitch": 72.0,
-    "Sleepy_eyeWeight": 35.0,   "Sleepy_mouthWeight": 18.0,  "Sleepy_pitch": 52.0,
+    "Doubt_eyeWeight": 75.0,    "Doubt_mouthWeight": 32.0,   "Doubt_pitch": 72.0,
+    "Sleepy_eyeWeight": 35.0,   "Sleepy_mouthWeight": 14.0,  "Sleepy_pitch": 52.0,
     # 4 个全局
     "eyeSize": 0.0,
     "yawBias": 0.0,
@@ -212,6 +216,52 @@ PERSONAL_DEFAULTS: Dict[str, float] = {
     "colorWarmBias": 0.00,
     "gazeLead": 0.50,           # 目光领先于语音的程度
 }
+
+#: 能量定标口径（docs/research/102）：
+#:   "voiced_p20" = 只用**浊音帧**定标（静音不参与）⇒ 能量动态从 0.242 恢复到 ~0.69
+#:   "all_p20"    = 旧口径（全轨分位数）⇒ 静音把 e_min 拖低，能量被压成窄带
+ENERGY_MIN_MODE = "voiced_p20"
+#: 能量下界分位数（对定标样本取）
+ENERGY_MIN_PERCENTILE = 20.0
+#: 能量上界分位数（对定标样本取）
+ENERGY_REF_PERCENTILE = 90.0
+
+
+def _energy_reference(track):
+    """按 ENERGY_MIN_MODE 计算能量定标上下界 ``(e_ref, e_min)``。
+
+    ⚠️ **为什么必须分口径**（docs/research/88 §3.3）：
+    真实 TTS 有 40%~60% 的时间是静音 ⇒ 用全轨 p20 当下界，
+    下界被拖到 −70~−90 dB（语音主体在 −30 dB 附近）⇒
+    分母被撑到 40~60 dB ⇒ 语音自身的几 dB 级起伏被压成 **0.242 的窄带**
+    ⇒ 嘴在说话时几乎不动。改用**浊音帧**定标后动态恢复到 ~0.69。
+
+    Args:
+        track: extract() 的输出（dict），含 ``env`` 与 ``voiced``
+
+    Returns:
+        (e_ref, e_min)：能量上界 / 下界（dBFS）
+    """
+    env = np.asarray(track.get("env", []), dtype=float)
+    if not len(env):
+        return 0.0, 0.0
+    sample = env
+    if ENERGY_MIN_MODE == "voiced_p20":
+        voiced = np.asarray(track.get("voiced", []), dtype=bool)
+        if len(voiced) == len(env) and voiced.any():
+            sample = env[voiced]
+    e_ref = float(np.percentile(sample, ENERGY_REF_PERCENTILE))
+    e_min = float(np.percentile(sample, ENERGY_MIN_PERCENTILE))
+    return e_ref, e_min
+
+#: 说话时嘴 weight 的能量调制口径（docs/research/102）：
+#:   "absolute"     = base + energyEyeGain × 45 × e_norm × gain（现状，绝对量）
+#:   "proportional" = base × (1 + energyEyeGain × e_norm × gain)（相对量，与基线同比例）
+MOUTH_ENERGY_MODE = "absolute"
+#: 停顿（静音）时嘴 weight = base × 该比例。
+#: ⚠️ **0 = 绝对闭嘴**（现状）⇒ 真实 TTS 有 40%~60% 静音 ⇒ `mouth_mean` 变成
+#:    「说话时长占比」的代理，**情绪身份在静音段被抹掉**（实测 SNR 0.19 的真因）。
+MOUTH_PAUSE_CLOSE_RATIO = 0.35
 
 PARAM_COUNT_EXPECT = 22 + 9 + 7 + 4
 
@@ -680,8 +730,7 @@ def compile_keyframes(track: dict, feat: ProsodyFeatures, p: Dict[str, float],
     env_t = track["times"]
     env = track["env"]
     cen = track["centroid"]
-    e_ref = float(np.percentile(env, 90)) if len(env) else 0.0
-    e_min = float(np.percentile(env, 20)) if len(env) else 0.0
+    e_ref, e_min = _energy_reference(track)
     e_rng = max(e_ref - e_min, 1.0)
     c_ref = feat.centroid_mean_hz
 
@@ -690,7 +739,10 @@ def compile_keyframes(track: dict, feat: ProsodyFeatures, p: Dict[str, float],
     e_norm = np.clip((env_i - e_min) / e_rng, 0.0, 1.0)
     c_norm = np.clip((cen_i - max(c_ref * 0.55, 1.0)) / max(c_ref * 0.9, 1.0), 0.0, 1.0)
 
-    mouth_w = base_mouth + p["energyEyeGain"] * 45.0 * e_norm * gain
+    if MOUTH_ENERGY_MODE == "proportional":
+        mouth_w = base_mouth * (1.0 + p["energyEyeGain"] * e_norm * gain)
+    else:
+        mouth_w = base_mouth + p["energyEyeGain"] * 45.0 * e_norm * gain
     # ⭐ 眼睛 weight 越大 = 越睁开（eyes.cpp:71-78）
     #    能量高 ⇒ 眼睛更睁开 ⇒ weight **变大**（与嘴相反：嘴 weight 越大越张开）
     eye_w = eye_w + p["energyEyeGain"] * 12.0 * e_norm * gain
@@ -713,7 +765,9 @@ def compile_keyframes(track: dict, feat: ProsodyFeatures, p: Dict[str, float],
         pv = _clamp(float(pitch[i]), PITCH_SOFT[0], PITCH_SOFT[1])
 
         ew = _clamp(float(eye_w[i]), *WEIGHT_RANGE)
-        mw = _clamp(0.0 if in_pause else float(mouth_w[i]), *WEIGHT_RANGE)
+        # ⚠️ 停顿时嘴**不是绝对归零**：按基线的比例闭合 ⇒ 情绪身份在静音段仍然保留
+        mw_i = (base_mouth * MOUTH_PAUSE_CLOSE_RATIO) if in_pause else float(mouth_w[i])
+        mw = _clamp(mw_i, *WEIGHT_RANGE)
         size = _clamp(p["eyeSize"], *SIZE_RANGE)
 
         # 眼睛位置偏移：JSON x/y ∈ [-100,100] 经 map_range 映射到**像素 ±16**

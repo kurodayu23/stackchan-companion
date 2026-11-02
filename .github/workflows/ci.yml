@@ -101,6 +101,17 @@ jobs:
       - name: check_prosody.py --self-test
         run: python tools/check_prosody.py --self-test
 
+      # ⭐ 韵律→身体的**联合标定器**（Q21）：守住选定工作点 + 输出四指标
+      #    （SNR / 跨文本留一可辨识度 / 能量通道活性 / 停顿不塌成 0）
+      # 本地复现：py -3.12 tools/calibrate_energy_gain.py --root .
+      - name: calibrate_energy_gain.py
+        run: python tools/calibrate_energy_gain.py --root .
+
+      # 标定器自检（变异夹具：停顿比/基线/增益/定标口径被改 ⇒ 必须报漂移）
+      # 本地复现：py -3.12 tools/calibrate_energy_gain.py --self-test
+      - name: calibrate_energy_gain.py --self-test
+        run: python tools/calibrate_energy_gain.py --self-test
+
       # 0x14 分段下发器（载荷上限 + 定时调度）
       # 本地复现：py -3.12 tools/dance_chunk.py --self-test
       - name: dance_chunk.py --self-test
