@@ -85,13 +85,19 @@ py -3.12 -m server.tests.test_e2e_offline             # 只跑端到端测试
 | `MINIMAX_BASE_URL` | 否 | `https://api.minimaxi.com` | 中国站。⚠ 海外域 `api.minimax.io` 对大陆账号返回 **2049 invalid api key** |
 | `STACKCHAN_PORT` | 否 | `12800` | 服务端监听端口 |
 | `STACKCHAN_HOST` | 否 | `0.0.0.0` | 监听地址 |
-| `STACKCHAN_PROVIDER` | 否 | `auto` | `auto` / `minimax` / `stub` |
+| `STACKCHAN_PROVIDER` | 否 | `auto` | `auto` / `minimax` / `stub` / `local`（`local` = 本地推理，见下） |
 | `MINIMAX_CHAT_MODEL` | 否 | `MiniMax-M3.1-Flash` | ⚠ 模型可用性是**账号级属性**，换 key 必须重测 |
 | `MINIMAX_TTS_MODEL` | 否 | `speech-02-hd` | TTS 模型 |
 | `MINIMAX_TTS_VOICE` | 否 | `female-shaonv` | ⚠ 音色 id 无效报 **2054**，余额不足报 **1008**，两个码分开判 |
 | `STACKCHAN_PRIVATE_DIR` | 否 | `<仓库根>/private` | 关系档案目录（**永不入库**） |
 | `STACKCHAN_PERSONA_DIR` | 否 | `<仓库根>/personas` | 通用人格包目录（**只读**） |
 | `STACKCHAN_HEARTBEAT` | 否 | `5.0` | 0x10 心跳间隔（秒）。官方云也是 5 秒 |
+| `STACKCHAN_LOCAL_BASE_URL` | 否 | `http://127.0.0.1:11434/v1` | 本地推理地址（Ollama / llama.cpp 的 OpenAI 兼容层）。**只允许回环地址**，非回环直接拒绝启动 |
+| `STACKCHAN_LOCAL_MODEL` | 否 | `llama3.2` | 本地对话模型名（以服务端 `/v1/models` 为准） |
+| `STACKCHAN_LOCAL_API_KEY` | 否 | 空 | OpenAI 兼容层要 key（Ollama 官方示例写的是占位符）。**只从环境变量读，不落盘、不回显** |
+| `STACKCHAN_LOCAL_TTS_MODEL` | 否 | 空 | 本地 TTS 模型名。**空 = 不提供 TTS**（回落到上层默认） |
+| `STACKCHAN_LOCAL_TTS_VOICE` | 否 | 空 | 本地 TTS 音色 |
+| `STACKCHAN_LOCAL_ALLOW_REMOTE` | 否 | `0` | ⚠ **置 1 才允许把对话发到外网**。默认 0 ⇒ 隐私不变量成立；非回环地址时即便置 1 也需显式放行 |
 
 设 key 的方式（**不要**写进任何仓库文件）：
 

@@ -61,3 +61,5 @@ check_mobile_app/selftest	python tools/check_mobile_app.py --self-test
 check_mobile_contract	python tools/check_mobile_contract.py --root .
 check_mobile_contract/selftest	python tools/check_mobile_contract.py --self-test
 server_tests	python server/run_tests.py
+check_local_provider	python tools/check_local_provider.py --root .
+check_local_provider/selftest	python tools/check_local_provider.py --self-test

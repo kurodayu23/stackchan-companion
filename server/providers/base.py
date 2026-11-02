@@ -30,6 +30,8 @@ from typing import Any, Dict, List, Optional, Sequence
 class ProviderKind(Enum):
     """provider 种类。"""
     MINIMAX = "minimax"
+    #: 本地推理（OpenAI 兼容，**只允许回环地址** ⇒ 对话正文不出网）
+    LOCAL = "local"
     STUB = "stub"
 
 

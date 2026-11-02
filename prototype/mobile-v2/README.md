@@ -108,10 +108,18 @@ py -3.12 prototype\mobile-v2\shot_ui.py   # 生成 shots/01-main.png… 05-reply
 | three.js 官方 | GLTFLoader / BufferGeometryUtils / 色调映射 / 阴影管线 | `vendor/three/*`（three@0.160.0） |
 | 本仓库 DESIGN.md / iOS 原型 | 深色基调 + 琥珀强调色（tuck-dark-calm）、「唯一主角」原则 | `prototype/ios/`、`DESIGN.md` |
 
-> ⚠️ 联网搜索本轮不可用（搜索 API key 失效），以上均为**本机既有、已实测**的实现；
-> 未引入任何未验证的第三方黑盒。下一步若开联网，优先看
-> [m5stack/StackChan](https://github.com/m5stack/StackChan) 官方 App 与
-> ESP32 Web 遥控类开源项目（joystick + 3D 姿态同步模式）。
+> ⚠️ `web-search` 工具本轮不可用（搜索 API key 401），检索全部走 **GitHub REST API + raw.githubusercontent.com**（本机网络直连，2026-10-30 实取）。
+
+### 7.2 ⭐ 开源生态调研（2026-10-30 实取，全文见 [`docs/research/100`](../../docs/research/100-StackChan开源生态调研与可接入点.md)）
+
+| 项目 | ★ | 拿到的 | 落地状态 |
+|---|---|---|---|
+| [`stack-chan/stack-chan`](https://github.com/stack-chan/stack-chan) `web/simulator/geometry.mjs` | 1832 | **官方真实几何**（脸 54×54×54mm / 圆角 4 / 脚 24×8×48×2 / CoreS3 54×54×16 / 前开口 51.6mm） | ✅ 已接入 `device-screen.html` |
+| 同上 `web/local-peer/ble-local-peer.mjs`（555 行） | 1832 | **浏览器 BLE 直连协议**（Nordic UART UUID、`SLB1`/`SLP1` 分片、MTU 244/60/20 回退、FNV-1a 认证） | 📋 二期兜底通道（iOS Safari 不支持 Web Bluetooth，故不作主线） |
+| [`zziying/stackchan-openapi`](https://github.com/zziying/stackchan-openapi) | 91 | **架构同构验证**：ESP32 只做硬件、AI/ML 全在主机，Wi-Fi HTTP 暴露 servo/face/camera/audio | ✅ 佐证「主机当 server」路线是社区验证过的 |
+| [`BrettKinny/dotty-stackchan`](https://github.com/BrettKinny/dotty-stackchan) | 121 | 6 状态机（idle/talk/story/security/sleep/dance）+ 12 LED 环；**privacy sleep = 关传感器不关机**；回复首字符即表情编码 | 📋 状态机与降级通道待做 |
+| [`uezo/AIAvatarStackChan`](https://github.com/uezo/AIAvatarStackChan) | 64 | 表情 + 自动眨眼 + **口型随语音同步（lip sync）** | 📋 与 `docs/research/88`「能量→嘴」通道互补 |
+| [`kisaragi-mochi/stackchan-mcp`](https://github.com/kisaragi-mochi/stackchan-mcp) / [`migratorywhale/stackchan-mcp`](https://github.com/migratorywhale/stackchan-mcp) | 167 / 98 | **MCP 网关**：让 AI agent 直接驱动机器人（say / set_head / face） | 💡 新机会：给 `server/` 加 MCP 接口 ≈ 1 天 |
 
 ## 八、已知限制
 

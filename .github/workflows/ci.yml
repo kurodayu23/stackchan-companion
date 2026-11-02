@@ -269,6 +269,18 @@ jobs:
       - name: check_citations.py --self-test
         run: python tools/check_citations.py --self-test
 
+      # ⭐ 「个人数据永不出网」执行判据（M-05 护城河项）：
+      #    本地推理 provider 只允许指向**回环地址** ⇒ 对话正文不出网。
+      #    本门禁零第三方依赖（不装 numpy 也能跑）。
+      # 本地复现：py -3.12 tools/check_local_provider.py --root .
+      - name: check_local_provider.py
+        run: python tools/check_local_provider.py --root .
+
+      # 门禁自检（变异夹具：拆掉回环拦截 / 改错协议路径 / 写死采样率 / 改默认值 ⇒ 必须被抓）
+      # 本地复现：py -3.12 tools/check_local_provider.py --self-test
+      - name: check_local_provider.py --self-test
+        run: python tools/check_local_provider.py --self-test
+
   # ---------------------------------------------------------------------------
   # iOS 原生感与工程结构（不需要 macOS 的那部分）
   # ---------------------------------------------------------------------------

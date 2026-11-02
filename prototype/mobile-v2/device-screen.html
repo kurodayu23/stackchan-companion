@@ -57,8 +57,10 @@
     <span>Yaw <b class="readout" id="yawOut">0°</b></span>
     <span>Pitch <b class="readout" id="pitchOut">6°</b></span>
     <button id="reset">回正</button>
+    <button id="blinkEye" type="button">眯眼（思考态）</button>
   </div>
   <p class="dir-hint">拖动设备屏区域 ↔ 改变角度（Yaw 满程 −128°~128°，Pitch 3°~87°，阻尼同步到四个角的数字）</p>
+  <p class="dir-hint">几何按固件真值渲染：眼容器 32×32、眼白直径 <code>map_range(size,-100,100,8,32)</code>、眼睑从上方压入（非同心理，偏移差 6 px）— 见 <code>docs/research/96</code> 与官方 <code>web/simulator/geometry.mjs</code>。</p>
 
 <script>
 (function () {
@@ -75,10 +77,47 @@
   let yaw = 0, pitch = 6, targetYaw = 0, targetPitch = 6;
   let dragging = false, lastX = 0, lastY = 0;
 
-  const EYE_Y = 104, EYE_GAP = 62, EYE_R = 15;
+  // ⭐ 几何真值（出处：docs/research/96 §二 固件 eyes.cpp 实读 + 官方 web/simulator/geometry.mjs）
+  //   F-1 眼容器恒为 32×32，锚点 = 眼白圆心
+  //   F-2 眼白是圆、眼睑是正方形（边长 = 眼白直径），眼睑后建 ⇒ 压在眼白上
+  //   F-3 眼睑 y 偏移 = -map_range(weight, 0, 100, 0, 眼睑高) ⇒ weight 越大越睁
+  //   F-4 眼睑容器内绝对定位 ⇒ 与眼白圆心差 6 px（C−s)/2，所以 weight=0 露的是下缘月牙
+  //   F-5 眼白直径 = map_range(size, -100, 100, 8, 32)；size=0 ⇒ 20 px
+  const EYE_CONTAINER = 32;
+  const EYE_DIAMETER = 20;            // size = 0
+  const EYE_Y = 104, EYE_GAP = 62;
   const PUPIL_R = 7;
+  const WEIGHT_OPEN = 70;             // 官方全睁档（Happy 72 / Angry 70 / Sad 70 / Neutral 0 取齐）
+  const WEIGHT_SQUINT = 35;           // 官方眯眼档（Sleepy 35）
+  let eyeWeight = WEIGHT_OPEN;
+
+  // 96 号公式：露出的帽高 h(w) = 0.2·weight + 6（weight=70 ⇒ 20 全睁；35 ⇒ 13 露 65%）
+  function lidCover(weight) {
+    const visible = 0.2 * weight + 6;
+    return Math.max(0, Math.min(EYE_DIAMETER, EYE_DIAMETER - visible));
+  }
 
   function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+  // 单只眼：眼白圆 + 眼睑正方形从容器顶压入（不同心，差 6 px）
+  function drawEye(cx, cy, weight, pupilDx, pupilDy) {
+    const r = EYE_DIAMETER / 2;
+    ctx.fillStyle = "#f1f5f9";
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+
+    // 眼睑：容器顶对齐（差 6 px 的绝对定位），从上方盖下来
+    const cover = lidCover(weight);
+    if (cover > 0) {
+      ctx.fillStyle = "#0a0b0e";
+      ctx.fillRect(cx - r, cy - r - 6 + 6, EYE_DIAMETER, cover); // 顶部与容器顶对齐
+    }
+
+    // 瞳孔（在眼白内随摇杆偏移）
+    ctx.fillStyle = "#101216";
+    ctx.beginPath();
+    ctx.arc(cx + pupilDx, cy + pupilDy, PUPIL_R, 0, Math.PI * 2);
+    ctx.fill();
+  }
 
   function draw() {
     // 应用阻尼
@@ -91,44 +130,36 @@
     ctx.fillStyle = "#0a0b0e";
     ctx.fillRect(0, 0, W, H);
 
-    // 眼白
-    ctx.fillStyle = "#f1f5f9";
-    const eyeUp = -clamp(yaw, -8, 8) * 0.35;          // 左右眼的竖直错位跟随转头
+    // 遥控反馈：眼睛看向摇杆方向（瞳孔偏移），pitch 让眼皮微抬/微落
+    const pupilDx = clamp(yaw, -128, 128) / 128 * 5;
+    const pupilDy = clamp(pitch - 6, -20, 20) / 20 * 4;
+    const eyeUp = -clamp(yaw, -8, 8) * 0.35;   // 左右眼竖直错位，跟随转头
     for (const side of [-1, 1]) {
-      const ex = W / 2 + side * EYE_GAP;
-      const ey = EYE_Y + eyeUp * side;
-      ctx.beginPath(); ctx.arc(ex, ey, EYE_R, 0, Math.PI * 2); ctx.fill();
+      const cx = W / 2 + side * EYE_GAP;
+      const cy = EYE_Y + eyeUp * side;
+      drawEye(cx, cy, eyeWeight, pupilDx, pupilDy);
     }
 
-    // 瞳孔：随摇杆方向移动（小范围）
-    const px = clamp(yaw, -128, 128) / 128 * 5;
-    const py = clamp(pitch - 6, -20, 20) / 20 * 4;
-    ctx.fillStyle = "#101216";
-    for (const side of [-1, 1]) {
-      const ex = W / 2 + side * EYE_GAP;
-      ctx.beginPath(); ctx.arc(ex + px, EYE_Y - 2 + py + eyeUp * side * 0.4, PUPIL_R, 0, Math.PI * 2); ctx.fill();
-    }
-
-    // 嘴：随 pitch 微开
+    // 嘴：随 pitch 微开（固件：weight=0 ⇒ 宽 90 / 高 6 / 圆角 0）
     const mouthOpen = clamp(pitch, 3, 87) / 87 * 3;
     ctx.fillStyle = "#101216";
     ctx.beginPath();
     ctx.ellipse(W / 2, 152, 26, 4 + mouthOpen, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // 四角角度读数（设备屏真实感：小字号）
+    // 四角读数（模拟设备屏的信息分区：左上 Yaw / 右上 档位 / 左下 Pitch / 右下 状态）
     ctx.fillStyle = "rgba(242,242,240,.5)";
     ctx.font = "10px monospace";
     ctx.textBaseline = "top";
     ctx.textAlign = "left";
-    ctx.fillText(`Y${Math.round(yaw)} P${Math.round(pitch)}`, 10, 10);
+    ctx.fillText(`Y ${Math.round(yaw)}°`, 10, 10);
     ctx.textAlign = "right";
-    ctx.fillText(`Y${Math.round(yaw)} P${Math.round(pitch)}`, W - 10, 10);
+    ctx.fillText(`P ${Math.round(pitch)}°`, W - 10, 10);
     ctx.textBaseline = "bottom";
     ctx.textAlign = "left";
-    ctx.fillText(`Y${Math.round(yaw)} P${Math.round(pitch)}`, 10, H - 8);
+    ctx.fillText("遥控中", 10, H - 8);
     ctx.textAlign = "right";
-    ctx.fillText(`Y${Math.round(yaw)} P${Math.round(pitch)}`, W - 10, H - 8);
+    ctx.fillText(`眼 ${eyeWeight}`, W - 10, H - 8);
 
     requestAnimationFrame(draw);
   }
@@ -157,6 +188,10 @@
   shell.addEventListener("pointerup", endDrag);
   shell.addEventListener("pointercancel", endDrag);
   document.getElementById("reset").addEventListener("click", () => { targetYaw = 0; targetPitch = 6; });
+  document.getElementById("blinkEye").addEventListener("click", () => {
+    // 思考态 ⇄ 全睁：走官方两档 weight（35 眯眼 / 70 全睁），见 docs/research/96 §三
+    eyeWeight = eyeWeight === WEIGHT_SQUINT ? WEIGHT_OPEN : WEIGHT_SQUINT;
+  });
 
   draw();
 })();

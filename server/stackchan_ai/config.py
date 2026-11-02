@@ -13,8 +13,17 @@
     MINIMAX_TTS_MODEL    默认 speech-02-hd
     MINIMAX_TTS_VOICE    默认 female-shaonv
     STACKCHAN_HOST       默认 0.0.0.0
-    STACKCHAN_PROVIDER   auto（默认）/ minimax / stub
+    STACKCHAN_PROVIDER   auto（默认）/ minimax / stub / local
     STACKCHAN_PRIVATE_DIR / STACKCHAN_PERSONA_DIR
+
+⭐ 本地推理（``STACKCHAN_PROVIDER=local``）专用变量 —— **M-05 护城河项**：
+
+    STACKCHAN_LOCAL_BASE_URL     默认 http://127.0.0.1:11434/v1
+    STACKCHAN_LOCAL_MODEL        默认 llama3.2
+    STACKCHAN_LOCAL_API_KEY      默认空（OpenAI 兼容层要 key；Ollama 官方示例写的是占位符）
+    STACKCHAN_LOCAL_TTS_MODEL    默认空（**空 = 不提供 TTS**）
+    STACKCHAN_LOCAL_TTS_VOICE    默认空
+    STACKCHAN_LOCAL_ALLOW_REMOTE 默认 0（**只允许回环地址**；置 1 才允许指向外网）
 
 🔒 API Key 纪律（硬性）：
     - 只从环境变量读，**代码里不得出现任何硬编码 key**；
@@ -41,6 +50,12 @@ DEFAULT_TTS_MODEL = "speech-02-hd"
 
 #: 实测可用的音色（docs/research/60 §6；音色 id 无效报 2054）
 DEFAULT_TTS_VOICE = "female-shaonv"
+
+#: 本地推理默认地址（Ollama 官方文档示例 `http://localhost:11434/v1/`）
+DEFAULT_LOCAL_BASE_URL = "http://127.0.0.1:11434/v1"
+
+#: 本地推理默认模型（Ollama 官方文档示例模型 `llama3.2`）
+DEFAULT_LOCAL_MODEL = "llama3.2"
 
 DEFAULT_HOST = "0.0.0.0"
 DEFAULT_PORT = 12800
@@ -83,6 +98,8 @@ class Config:
         "host", "port", "base_url", "api_key", "chat_model", "tts_model",
         "tts_voice", "provider", "private_dir", "persona_dir",
         "heartbeat_interval", "log_verbose",
+        "local_base_url", "local_model", "local_api_key",
+        "local_tts_model", "local_tts_voice", "local_allow_remote",
     )
 
     def __init__(self, host: str = DEFAULT_HOST, port: int = DEFAULT_PORT,
@@ -95,7 +112,13 @@ class Config:
                  private_dir: Optional[Path] = None,
                  persona_dir: Optional[Path] = None,
                  heartbeat_interval: float = 5.0,
-                 log_verbose: bool = True) -> None:
+                 log_verbose: bool = True,
+                 local_base_url: str = DEFAULT_LOCAL_BASE_URL,
+                 local_model: str = DEFAULT_LOCAL_MODEL,
+                 local_api_key: Optional[str] = None,
+                 local_tts_model: str = "",
+                 local_tts_voice: str = "",
+                 local_allow_remote: bool = False) -> None:
         self.host = host
         self.port = port
         self.base_url = base_url.rstrip("/")
@@ -108,6 +131,12 @@ class Config:
         self.persona_dir = persona_dir or (repo_root() / "personas")
         self.heartbeat_interval = heartbeat_interval
         self.log_verbose = log_verbose
+        self.local_base_url = (local_base_url or DEFAULT_LOCAL_BASE_URL).strip()
+        self.local_model = (local_model or DEFAULT_LOCAL_MODEL).strip()
+        self.local_api_key = (local_api_key or "").strip() or None
+        self.local_tts_model = (local_tts_model or "").strip()
+        self.local_tts_voice = (local_tts_voice or "").strip()
+        self.local_allow_remote = bool(local_allow_remote)
 
     # ── 构造 ───────────────────────────────────────────────────────────────
     @classmethod
@@ -115,7 +144,7 @@ class Config:
         env = os.environ if env is None else env
         raw_key = (env.get("MINIMAX_API_KEY") or "").strip()
         provider = (env.get("STACKCHAN_PROVIDER") or "auto").strip().lower()
-        if provider not in ("auto", "minimax", "stub"):
+        if provider not in ("auto", "minimax", "stub", "local"):
             provider = "auto"
         private_dir = env.get("STACKCHAN_PRIVATE_DIR")
         persona_dir = env.get("STACKCHAN_PERSONA_DIR")
@@ -127,6 +156,8 @@ class Config:
             heartbeat = float(env.get("STACKCHAN_HEARTBEAT") or 5.0)
         except ValueError:
             heartbeat = 5.0
+        local_allow_remote = (env.get("STACKCHAN_LOCAL_ALLOW_REMOTE") or "").strip().lower() \
+            in ("1", "true", "yes", "on")
         return cls(
             host=(env.get("STACKCHAN_HOST") or DEFAULT_HOST).strip(),
             port=port,
@@ -140,6 +171,12 @@ class Config:
             persona_dir=Path(persona_dir) if persona_dir else None,
             heartbeat_interval=heartbeat,
             log_verbose=(env.get("STACKCHAN_VERBOSE") or "1") not in ("0", "false", "no"),
+            local_base_url=(env.get("STACKCHAN_LOCAL_BASE_URL") or DEFAULT_LOCAL_BASE_URL).strip(),
+            local_model=(env.get("STACKCHAN_LOCAL_MODEL") or DEFAULT_LOCAL_MODEL).strip(),
+            local_api_key=(env.get("STACKCHAN_LOCAL_API_KEY") or "").strip() or None,
+            local_tts_model=(env.get("STACKCHAN_LOCAL_TTS_MODEL") or "").strip(),
+            local_tts_voice=(env.get("STACKCHAN_LOCAL_TTS_VOICE") or "").strip(),
+            local_allow_remote=local_allow_remote,
         )
 
     # ── 派生属性 ───────────────────────────────────────────────────────────
@@ -150,11 +187,13 @@ class Config:
 
     @property
     def provider_name(self) -> str:
-        """最终选中的 provider 名：'minimax' 或 'stub'。"""
+        """最终选中的 provider 名：'minimax' / 'stub' / 'local'。"""
         if self.provider == "stub":
             return "stub"
         if self.provider == "minimax":
             return "minimax"
+        if self.provider == "local":
+            return "local"
         return "minimax" if self.api_key_present else "stub"
 
     @property
@@ -186,5 +225,6 @@ class Config:
 __all__ = [
     "Config", "DEFAULT_MINIMAX_BASE_URL", "DEFAULT_CHAT_MODEL",
     "DEFAULT_TTS_MODEL", "DEFAULT_TTS_VOICE", "DEFAULT_HOST", "DEFAULT_PORT",
+    "DEFAULT_LOCAL_BASE_URL", "DEFAULT_LOCAL_MODEL",
     "DEVICE_PATH", "REDACTED", "repo_root", "mask_secret",
 ]
